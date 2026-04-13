@@ -1,0 +1,71 @@
+name: Build Flutter Web & Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    name: Build Flutter Web → Vercel
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Install Flutter ─────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      # ── 3. Install dependencies ────────────────────────────────────────────
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── 4. Create required asset directories ──────────────────────────────
+      - name: Create asset directories
+        run: |
+          mkdir -p assets/fonts assets/images assets/icons assets/animations assets/audio
+          touch assets/images/.gitkeep assets/icons/.gitkeep
+          touch assets/animations/.gitkeep assets/audio/.gitkeep
+
+      # ── 5. Download Amiri fonts ────────────────────────────────────────────
+      - name: Download Amiri fonts
+        run: |
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf" \
+            -o assets/fonts/Amiri-Regular.ttf
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Bold.ttf" \
+            -o assets/fonts/Amiri-Bold.ttf
+          curl -fsSL "https://github.com/alif-type/amiri/releases/download/1.000/AmiriFont-1.000.zip" \
+            -o /tmp/amiri.zip || true
+          # Fallback: use Amiri-Regular as AmiriQuran if dedicated file unavailable
+          cp assets/fonts/Amiri-Regular.ttf assets/fonts/AmiriQuran-Regular.ttf
+
+      # ── 6. Generate Isar code ──────────────────────────────────────────────
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+        continue-on-error: true  # stubs already present; this refines them
+
+      # ── 7. Enable & build Flutter Web ─────────────────────────────────────
+      - name: Build Flutter Web
+        run: |
+          flutter config --enable-web
+          flutter build web --release \
+            --web-renderer canvaskit \
+            --dart-define=FLUTTER_WEB_CANVASKIT_URL=https://unpkg.com/canvaskit-wasm@0.38.2/bin/
+
+      # ── 8. Deploy to Vercel ────────────────────────────────────────────────
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: build/web
+          vercel-args: '--prod'
