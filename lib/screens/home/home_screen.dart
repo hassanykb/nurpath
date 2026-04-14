@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -395,17 +396,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'AI reflection coming soon — Bismillah! 🤲',
-                        style: AppTypography.bodyMedium,
-                      ),
-                      backgroundColor: AppColors.bgCardElevated,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
+                  context.go('/reflect');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.emerald,
@@ -423,13 +414,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _shareAyah(BuildContext context, String arabic, String translation, String ref) {
     if (!mounted) return;
+    final copyText = '$arabic\n\n$translation\n\n— $ref';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('"$translation" — $ref', style: AppTypography.bodySmall),
         backgroundColor: AppColors.bgCardElevated,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        action: SnackBarAction(label: 'Copy', textColor: AppColors.gold, onPressed: () {}),
+        action: SnackBarAction(
+          label: 'Copy',
+          textColor: AppColors.gold,
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: copyText));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Copied to clipboard', style: AppTypography.bodySmall),
+                backgroundColor: AppColors.bgCardElevated,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

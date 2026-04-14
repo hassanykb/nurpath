@@ -12,6 +12,7 @@ class DbService {
   static const _srsBox = 'srs';
   static const _journeysBox = 'journeys';
   static const _progressBox = 'progress';
+  static const _bookmarksBox = 'bookmarks';
 
   DbService._();
 
@@ -30,6 +31,7 @@ class DbService {
       Hive.openBox(_srsBox),
       Hive.openBox(_journeysBox),
       Hive.openBox(_progressBox),
+      Hive.openBox(_bookmarksBox),
     ]);
     await _seedDefaultData();
   }
@@ -305,4 +307,44 @@ class DbService {
   }
 
   DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  // ── Bookmarks ─────────────────────────────────────────────────────────────
+
+  Future<bool> isBookmarked(int surahNumber, int ayahNumber) async {
+    final box = Hive.box(_bookmarksBox);
+    return box.containsKey('$surahNumber:$ayahNumber');
+  }
+
+  /// Returns the full set of bookmarked keys ('surahNumber:ayahNumber').
+  Set<String> getBookmarkedKeys() {
+    return Hive.box(_bookmarksBox).keys.cast<String>().toSet();
+  }
+
+  Future<void> toggleBookmark({
+    required int surahNumber,
+    required int ayahNumber,
+    required String arabicText,
+    required String translation,
+  }) async {
+    final box = Hive.box(_bookmarksBox);
+    final key = '$surahNumber:$ayahNumber';
+    if (box.containsKey(key)) {
+      await box.delete(key);
+    } else {
+      await box.put(key, {
+        'surahNumber': surahNumber,
+        'ayahNumber': ayahNumber,
+        'arabicText': arabicText,
+        'translation': translation,
+        'bookmarkedAt': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  Future<List<Map<dynamic, dynamic>>> getBookmarks() async {
+    final box = Hive.box(_bookmarksBox);
+    return box.values.cast<Map<dynamic, dynamic>>().toList()
+      ..sort((a, b) => (b['bookmarkedAt'] as String)
+          .compareTo(a['bookmarkedAt'] as String));
+  }
 }

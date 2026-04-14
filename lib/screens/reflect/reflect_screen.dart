@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../providers/app_providers.dart';
@@ -22,6 +23,29 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   bool _isSaving = false;
   bool _showDeedDropdown = false;
 
+  // ── Voice-to-text ────────────────────────────────────────────────────
+  final SpeechToText _speech = SpeechToText();
+  bool _speechAvailable = false;
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    _speechAvailable = await _speech.initialize(
+      onError: (_) => setState(() => _isListening = false),
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _isListening = false);
+        }
+      },
+    );
+    if (mounted) setState(() {});
+  }
+
   static const List<String> _deeds = [
     'Charity',
     'Prayer',
@@ -42,6 +66,7 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   @override
   void dispose() {
     _journalController.dispose();
+    _speech.stop();
     super.dispose();
   }
 
@@ -149,6 +174,8 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
         _JournalEditor(
           controller: _journalController,
           onVoiceInput: _startVoiceInput,
+          isListening: _isListening,
+          speechAvailable: _speechAvailable,
         ),
         const SizedBox(height: 12),
 
@@ -273,14 +300,59 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   }
 
   void _getNextPrompt() {
+    ref.invalidate(dailyAyahProvider);
+    ref.invalidate(reflectionPromptProvider);
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Loading next reflection prompt…')),
+      SnackBar(
+        content: Text('Loading a new reflection…', style: AppTypography.bodyMedium),
+        backgroundColor: AppColors.bgCardElevated,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
-  void _startVoiceInput() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Voice input coming soon…')),
+  Future<void> _startVoiceInput() async {
+    if (!_speechAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Microphone not available on this device',
+              style: AppTypography.bodyMedium),
+          backgroundColor: AppColors.bgCardElevated,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    setState(() => _isListening = true);
+    final existingText = _journalController.text;
+
+    await _speech.listen(
+      onResult: (result) {
+        if (result.finalResult) {
+          final spoken = result.recognizedWords;
+          _journalController.text = existingText.isEmpty
+              ? spoken
+              : '$existingText $spoken';
+          _journalController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _journalController.text.length),
+          );
+          setState(() => _isListening = false);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 5),
+      localeId: 'en_US',
     );
   }
 
@@ -463,10 +535,14 @@ class _ReflectionPromptCard extends StatelessWidget {
 class _JournalEditor extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onVoiceInput;
+  final bool isListening;
+  final bool speechAvailable;
 
   const _JournalEditor({
     required this.controller,
     required this.onVoiceInput,
+    required this.isListening,
+    required this.speechAvailable,
   });
 
   @override
@@ -475,7 +551,12 @@ class _JournalEditor extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider, width: 0.5),
+        border: Border.all(
+          color: isListening
+              ? AppColors.emerald.withOpacity(0.6)
+              : AppColors.divider,
+          width: isListening ? 1.5 : 0.5,
+        ),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -486,9 +567,14 @@ class _JournalEditor extends StatelessWidget {
             maxLines: 5,
             style: AppTypography.bodyMedium,
             decoration: InputDecoration(
-              hintText: 'Private digital journal entry…',
-              hintStyle:
-                  AppTypography.bodyMedium.copyWith(color: AppColors.textDisabled),
+              hintText: isListening
+                  ? 'Listening… speak now'
+                  : 'Private digital journal entry…',
+              hintStyle: AppTypography.bodyMedium.copyWith(
+                color: isListening
+                    ? AppColors.emerald.withOpacity(0.7)
+                    : AppColors.textDisabled,
+              ),
               border: InputBorder.none,
               filled: false,
               contentPadding: EdgeInsets.zero,
@@ -501,13 +587,23 @@ class _JournalEditor extends StatelessWidget {
                 onTap: onVoiceInput,
                 child: Row(
                   children: [
-                    const Icon(Icons.mic_rounded,
-                        size: 16, color: AppColors.textMuted),
+                    Icon(
+                      isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      size: 16,
+                      color: isListening
+                          ? AppColors.emerald
+                          : speechAvailable
+                              ? AppColors.textMuted
+                              : AppColors.textDisabled,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      'Voice-to-Text',
-                      style: AppTypography.labelSmall
-                          .copyWith(color: AppColors.textMuted),
+                      isListening ? 'Tap to stop' : 'Voice-to-Text',
+                      style: AppTypography.labelSmall.copyWith(
+                        color: isListening
+                            ? AppColors.emerald
+                            : AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),

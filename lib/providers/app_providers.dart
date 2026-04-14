@@ -97,6 +97,16 @@ final reflectionPromptProvider =
 });
 
 // ============================================================
+// BOOKMARKS
+// ============================================================
+
+/// Reactive set of bookmarked keys ('surahNumber:ayahNumber').
+/// Refresh with: ref.read(bookmarkedKeysProvider.notifier).state = DbService.instance.getBookmarkedKeys()
+final bookmarkedKeysProvider = StateProvider<Set<String>>((ref) {
+  return DbService.instance.getBookmarkedKeys();
+});
+
+// ============================================================
 // SRS / MEMORIZE
 // ============================================================
 

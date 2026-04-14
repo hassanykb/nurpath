@@ -66,7 +66,8 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                         IconButton(
                           icon: const Icon(Icons.settings_outlined,
                               color: AppColors.textSecondary, size: 20),
-                          onPressed: () {},
+                          onPressed: () =>
+                              _showMemorizeSettings(context, ref),
                         ),
                       ],
                     ),
@@ -329,6 +330,157 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
     ); // Scaffold
   },
 );
+  }
+
+  void _showMemorizeSettings(BuildContext context, WidgetRef ref) {
+    bool showTranslation = true;
+    bool loopAudio = false;
+    double speed = ref.read(playbackSpeedProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Memorize Settings', style: AppTypography.headlineMedium),
+              const SizedBox(height: 20),
+
+              // Show Translation
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Show Translation',
+                            style: AppTypography.bodyMedium),
+                        Text('Display English meaning under Arabic',
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: showTranslation,
+                    onChanged: (v) =>
+                        setModalState(() => showTranslation = v),
+                    activeColor: AppColors.emerald,
+                  ),
+                ],
+              ),
+              Container(height: 0.5, color: AppColors.divider),
+
+              // Loop Audio
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Loop Audio', style: AppTypography.bodyMedium),
+                        Text('Repeat each ayah automatically',
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: loopAudio,
+                    onChanged: (v) => setModalState(() => loopAudio = v),
+                    activeColor: AppColors.emerald,
+                  ),
+                ],
+              ),
+              Container(height: 0.5, color: AppColors.divider),
+
+              // Playback speed
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Playback Speed: ${speed.toStringAsFixed(1)}×',
+                        style: AppTypography.bodyMedium),
+                    Slider(
+                      value: speed,
+                      min: 0.5,
+                      max: 2.0,
+                      divisions: 6,
+                      activeColor: AppColors.gold,
+                      inactiveColor: AppColors.divider,
+                      label: '${speed.toStringAsFixed(1)}×',
+                      onChanged: (v) => setModalState(() => speed = v),
+                    ),
+                  ],
+                ),
+              ),
+              Container(height: 0.5, color: AppColors.divider),
+              const SizedBox(height: 12),
+
+              // Reset progress
+              InkWell(
+                onTap: () {
+                  setState(() => _revealedCards.clear());
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Session progress reset',
+                          style: AppTypography.bodyMedium),
+                      backgroundColor: AppColors.bgCardElevated,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.refresh_rounded,
+                          size: 18, color: AppColors.textMuted),
+                      const SizedBox(width: 8),
+                      Text('Reset Session Progress',
+                          style: AppTypography.bodyMedium
+                              .copyWith(color: AppColors.textMuted)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(playbackSpeedProvider.notifier).state =
+                        speed;
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Apply Settings'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

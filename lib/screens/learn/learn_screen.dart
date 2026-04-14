@@ -6,6 +6,7 @@ import '../../theme/app_typography.dart';
 import '../../providers/app_providers.dart';
 import '../../models/ayah_model.dart';
 import '../../services/audio_service.dart';
+import '../../services/db_service.dart';
 import '../../services/quran_api_service.dart';
 import '../../widgets/nurpath_card.dart';
 import '../../widgets/audio_player_bar.dart';
@@ -26,7 +27,6 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
   late int _currentSurahNumber;
   int _currentAyahIndex = 0;
   bool _isPlayerVisible = true;
-  bool _wordByWord = false;
 
   @override
   void initState() {
@@ -43,12 +43,12 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
 
   @override
   Widget build(BuildContext context) {
-    final surahAsync =
-        ref.watch(surahProvider(_currentSurahNumber));
+    final surahAsync = ref.watch(surahProvider(_currentSurahNumber));
     final isPlaying = ref.watch(isPlayingProvider);
     final speed = ref.watch(playbackSpeedProvider);
     final progress = ref.watch(audioProgressProvider);
     final reciter = ref.watch(currentReciterProvider);
+    final bookmarkedKeys = ref.watch(bookmarkedKeysProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -60,6 +60,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
               surahNumber: _currentSurahNumber,
               surahAsync: surahAsync,
               onSurahSelect: () => _showSurahPicker(context),
+              currentAyah: surahAsync.valueOrNull?.ayahs.isNotEmpty == true
+                  ? surahAsync.valueOrNull!.ayahs[_currentAyahIndex]
+                  : null,
+              bookmarkedKeys: bookmarkedKeys,
+              onBookmark: _toggleBookmark,
             ),
 
             // ── Tab Bar ─────────────────────────────────────────
@@ -89,10 +94,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                     _ReadTab(
                       ayahs: surahData.ayahs,
                       currentIndex: _currentAyahIndex,
-                      onAyahTap: (i) => setState(
-                        () => _currentAyahIndex = i,
-                      ),
+                      bookmarkedKeys: bookmarkedKeys,
+                      onAyahTap: (i) => setState(() => _currentAyahIndex = i),
                       onPlayAyah: (ayah) => _playAyah(ayah),
+                      onBookmarkAyah: _toggleBookmark,
                     ),
                     _WordByWordTab(
                       ayah: surahData.ayahs.isNotEmpty
@@ -102,9 +107,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                   ],
                 ),
                 loading: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.emerald,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.emerald),
                 ),
                 error: (e, _) => Center(
                   child: Column(
@@ -117,8 +120,8 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                           style: AppTypography.bodyMedium),
                       const SizedBox(height: 8),
                       ElevatedButton(
-                        onPressed: () => ref.refresh(
-                            surahProvider(_currentSurahNumber)),
+                        onPressed: () =>
+                            ref.refresh(surahProvider(_currentSurahNumber)),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -147,6 +150,38 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _toggleBookmark(AyahData ayah) async {
+    await DbService.instance.toggleBookmark(
+      surahNumber: ayah.surahNumber,
+      ayahNumber: ayah.ayahNumber,
+      arabicText: ayah.arabicText,
+      translation: ayah.translation,
+    );
+    // Refresh the bookmarked keys provider
+    ref.read(bookmarkedKeysProvider.notifier).state =
+        DbService.instance.getBookmarkedKeys();
+
+    if (!mounted) return;
+    final key = '${ayah.surahNumber}:${ayah.ayahNumber}';
+    final isNowBookmarked =
+        ref.read(bookmarkedKeysProvider).contains(key);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isNowBookmarked
+              ? 'Ayah ${ayah.ayahNumber} bookmarked ✨'
+              : 'Bookmark removed',
+          style: AppTypography.bodyMedium,
+        ),
+        backgroundColor: AppColors.bgCardElevated,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -206,15 +241,24 @@ class _LearnHeader extends StatelessWidget {
   final int surahNumber;
   final AsyncValue<SurahWithTranslation> surahAsync;
   final VoidCallback onSurahSelect;
+  final AyahData? currentAyah;
+  final Set<String> bookmarkedKeys;
+  final Future<void> Function(AyahData) onBookmark;
 
   const _LearnHeader({
     required this.surahNumber,
     required this.surahAsync,
     required this.onSurahSelect,
+    required this.currentAyah,
+    required this.bookmarkedKeys,
+    required this.onBookmark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isBookmarked = currentAyah != null &&
+        bookmarkedKeys.contains('${currentAyah!.surahNumber}:${currentAyah!.ayahNumber}');
+
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -257,9 +301,15 @@ class _LearnHeader extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.bookmark_border_rounded,
-                  color: AppColors.textPrimary),
-              onPressed: () {},
+              icon: Icon(
+                isBookmarked
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                color: isBookmarked ? AppColors.gold : AppColors.textPrimary,
+              ),
+              onPressed: currentAyah != null
+                  ? () => onBookmark(currentAyah!)
+                  : null,
             ),
           ],
         ),
@@ -271,14 +321,18 @@ class _LearnHeader extends StatelessWidget {
 class _ReadTab extends StatelessWidget {
   final List<AyahData> ayahs;
   final int currentIndex;
+  final Set<String> bookmarkedKeys;
   final ValueChanged<int> onAyahTap;
   final ValueChanged<AyahData> onPlayAyah;
+  final Future<void> Function(AyahData) onBookmarkAyah;
 
   const _ReadTab({
     required this.ayahs,
     required this.currentIndex,
+    required this.bookmarkedKeys,
     required this.onAyahTap,
     required this.onPlayAyah,
+    required this.onBookmarkAyah,
   });
 
   @override
@@ -289,6 +343,9 @@ class _ReadTab extends StatelessWidget {
       itemBuilder: (ctx, i) {
         final ayah = ayahs[i];
         final isActive = i == currentIndex;
+        final isBookmarked =
+            bookmarkedKeys.contains('${ayah.surahNumber}:${ayah.ayahNumber}');
+
         return GestureDetector(
           onTap: () => onAyahTap(i),
           child: Container(
@@ -357,15 +414,19 @@ class _ReadTab extends StatelessWidget {
                         onPressed: () => onPlayAyah(ayah),
                       ),
                       IconButton(
-                        icon: const Icon(
-                          Icons.bookmark_border_rounded,
+                        icon: Icon(
+                          isBookmarked
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
                           size: 18,
-                          color: AppColors.textMuted,
+                          color: isBookmarked
+                              ? AppColors.gold
+                              : AppColors.textMuted,
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
                             minWidth: 28, minHeight: 28),
-                        onPressed: () {},
+                        onPressed: () => onBookmarkAyah(ayah),
                       ),
                     ],
                   ),
@@ -417,11 +478,12 @@ class _WordByWordTab extends StatelessWidget {
       );
     }
 
-    // Split Arabic text into words
-    final arabicWords = ayah!.arabicText.split(' ')
+    final arabicWords = ayah!.arabicText
+        .split(' ')
         .where((w) => w.isNotEmpty)
         .toList();
-    final translationWords = ayah!.translation.split(' ')
+    final translationWords = ayah!.translation
+        .split(' ')
         .where((w) => w.isNotEmpty)
         .toList();
 
@@ -430,7 +492,6 @@ class _WordByWordTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Full arabic on top
           NurPathCard(
             padding: const EdgeInsets.all(16),
             child: Text(
@@ -443,21 +504,18 @@ class _WordByWordTab extends StatelessWidget {
           const SizedBox(height: 16),
           Text('Word by Word', style: AppTypography.headlineSmall),
           const SizedBox(height: 12),
-          // Words grid
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: arabicWords.asMap().entries.map((entry) {
               final i = entry.key;
               final word = entry.value;
-              final engWord = i < translationWords.length
-                  ? translationWords[i]
-                  : '';
+              final engWord =
+                  i < translationWords.length ? translationWords[i] : '';
               return _WordCard(arabic: word, english: engWord);
             }).toList(),
           ),
           const SizedBox(height: 16),
-          // Translation
           NurPathCard(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -575,19 +633,16 @@ class _SurahPickerSheet extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      title: Text(
-                        s.nameEnglish,
-                        style: AppTypography.titleMedium,
-                      ),
+                      title: Text(s.nameEnglish,
+                          style: AppTypography.titleMedium),
                       subtitle: Text(
                         '${s.nameTransliteration} · ${s.ayahCount} ayahs',
                         style: AppTypography.bodySmall,
                       ),
                       trailing: Text(
                         s.nameArabic,
-                        style: AppTypography.arabicSmall.copyWith(
-                          fontSize: 14,
-                        ),
+                        style:
+                            AppTypography.arabicSmall.copyWith(fontSize: 14),
                         textDirection: TextDirection.rtl,
                       ),
                       onTap: () => onSelect(s.number),
@@ -595,10 +650,12 @@ class _SurahPickerSheet extends ConsumerWidget {
                   },
                 ),
                 loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.emerald),
+                  child:
+                      CircularProgressIndicator(color: AppColors.emerald),
                 ),
                 error: (e, _) => Center(
-                  child: Text('Failed to load surahs', style: AppTypography.bodyMedium),
+                  child: Text('Failed to load surahs',
+                      style: AppTypography.bodyMedium),
                 ),
               ),
             ),

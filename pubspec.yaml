@@ -38,6 +38,9 @@ dependencies:
   # TTS (has web support)
   flutter_tts: ^4.0.2
 
+  # Speech-to-text (supports web, iOS, Android)
+  speech_to_text: ^7.0.0
+
   # Fonts & Icons
   google_fonts: ^6.2.1
 
