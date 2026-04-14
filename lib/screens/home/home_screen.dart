@@ -11,11 +11,16 @@ import '../../widgets/faith_ring.dart';
 import '../../widgets/streak_badge.dart';
 import '../../widgets/ayah_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(userProfileProvider);
     final dailyAyahAsync = ref.watch(dailyAyahProvider);
     final journeysAsync = ref.watch(journeysProvider);
@@ -32,27 +37,40 @@ class HomeScreen extends ConsumerWidget {
               backgroundColor: AppColors.bgPrimary.withOpacity(0.95),
               title: Row(
                 children: [
-                  // NurPath logo text
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Nur',
-                          style: AppTypography.headlineMedium.copyWith(
-                            color: AppColors.gold,
-                            fontFamily: 'Amiri',
-                            fontSize: 22,
-                          ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Nur',
+                              style: AppTypography.headlineMedium.copyWith(
+                                color: AppColors.gold,
+                                fontFamily: 'Amiri',
+                                fontSize: 22,
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'Path',
+                              style: AppTypography.headlineMedium.copyWith(
+                                color: AppColors.textPrimary,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ],
                         ),
-                        TextSpan(
-                          text: 'Path',
-                          style: AppTypography.headlineMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontSize: 22,
-                          ),
+                      ),
+                      Text(
+                        'Build v1.1.2 • Bismillah',
+                        style: AppTypography.labelSmall.copyWith(
+                          fontSize: 8,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.5,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   // Streak badge
@@ -68,7 +86,17 @@ class HomeScreen extends ConsumerWidget {
                       Icons.notifications_outlined,
                       color: AppColors.textSecondary,
                     ),
-                    onPressed: () => _showNotificationsSheet(context),
+                    onPressed: () {
+                      // Immediate visual feedback to confirm taps work
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Opening notifications...'),
+                          duration: Duration(milliseconds: 500),
+                        ),
+                      );
+                      _showNotificationsSheet(context);
+                    },
                   ),
                 ],
               ),
@@ -164,7 +192,7 @@ class HomeScreen extends ConsumerWidget {
                           ref: '${ayah.surahNumber}:${ayah.ayahNumber}',
                         ),
                       ).animate().fadeIn(delay: 300.ms),
-                      loading: () => const _AyahCardSkeleton(),
+                      loading: () => _AyahCardSkeleton(onRetry: () => ref.invalidate(dailyAyahProvider)),
                       error: (e, _) => AyahCard(
                         arabic: 'فَٱذْكُرُونِىٓ أَذْكُرْكُمْ وَٱشْكُرُوا۟ لِى وَلَا تَكْفُرُونِ',
                         translation:
@@ -247,6 +275,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _showNotificationsSheet(BuildContext context) {
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.bgCard,
@@ -261,7 +290,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Text('Notifications', style: AppTypography.headlineMedium),
             const SizedBox(height: 16),
-            _NotifTile(
+            const _NotifTile(
               icon: Icons.wb_sunny_rounded,
               color: AppColors.gold,
               title: 'Daily Verse Ready',
@@ -269,7 +298,7 @@ class HomeScreen extends ConsumerWidget {
               time: 'Now',
             ),
             const SizedBox(height: 10),
-            _NotifTile(
+            const _NotifTile(
               icon: Icons.psychology_rounded,
               color: AppColors.emerald,
               title: 'Memorization Review',
@@ -277,7 +306,7 @@ class HomeScreen extends ConsumerWidget {
               time: 'Today',
             ),
             const SizedBox(height: 10),
-            _NotifTile(
+            const _NotifTile(
               icon: Icons.route_rounded,
               color: AppColors.ringSalah,
               title: 'Journey Reminder',
@@ -297,6 +326,7 @@ class HomeScreen extends ConsumerWidget {
     required String translation,
     required String ref,
   }) {
+    if (!mounted) return;
     final controller = TextEditingController();
     showModalBottomSheet(
       context: context,
@@ -392,6 +422,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _shareAyah(BuildContext context, String arabic, String translation, String ref) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('"$translation" — $ref', style: AppTypography.bodySmall),
@@ -813,19 +844,52 @@ class _GreetingSkeleton extends StatelessWidget {
 }
 
 class _AyahCardSkeleton extends StatelessWidget {
-  const _AyahCardSkeleton();
+  final VoidCallback? onRetry;
+  const _AyahCardSkeleton({this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    return _ShimmerBox(
-      child: Container(
-        height: 220,
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2), width: 0.5),
+    return Stack(
+      children: [
+        _ShimmerBox(
+          child: Container(
+            height: 240,
+            decoration: BoxDecoration(
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.gold.withOpacity(0.2), width: 0.5),
+            ),
+          ),
         ),
-      ),
+        Positioned.fill(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.gold,
+                  ),
+                ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh, size: 14, color: AppColors.gold),
+                    label: Text(
+                      'Retry if stuck',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.gold),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -848,9 +912,9 @@ class _ShimmerBoxState extends State<_ShimmerBox>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.3, end: 0.7).animate(
+    _anim = Tween<double>(begin: 0.2, end: 0.6).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
   }

@@ -87,14 +87,20 @@ class QuranApiService {
   // Fetch a random ayah for the daily verse
   Future<AyahData> fetchRandomAyah() async {
     try {
-      // Random surah 1-114, random ayah
+      // Shorter timeout for the random ayah to avoid hanging the home screen
+      final options = Options(sendTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5));
+      
+      // Random surah 1-114
       final surahNum = DateTime.now().millisecondsSinceEpoch % 114 + 1;
-      final response = await _dio.get('/surah/$surahNum/$_arabicEdition');
-      final englishResponse = await _dio.get('/surah/$surahNum/$_englishEdition');
+      
+      final responses = await Future.wait([
+        _dio.get('/surah/$surahNum/$_arabicEdition', options: options),
+        _dio.get('/surah/$surahNum/$_englishEdition', options: options),
+      ]);
 
-      final arabicAyahs = (response.data['data']['ayahs'] as List)
+      final arabicAyahs = (responses[0].data['data']['ayahs'] as List)
           .cast<Map<String, dynamic>>();
-      final englishAyahs = (englishResponse.data['data']['ayahs'] as List)
+      final englishAyahs = (responses[1].data['data']['ayahs'] as List)
           .cast<Map<String, dynamic>>();
 
       final idx = DateTime.now().day % arabicAyahs.length;
@@ -105,6 +111,7 @@ class QuranApiService {
         translation: englishAyahs[idx]['text'] as String,
       );
     } catch (e) {
+      debugLog('Random Ayah fetch failed: $e. Using fallback.');
       // Return a well-known fallback
       return const AyahData(
         surahNumber: 2,
