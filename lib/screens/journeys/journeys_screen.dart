@@ -268,7 +268,7 @@ class _JourneyCard extends StatelessWidget {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        shape: BoxShape.hexagon,
+                        shape: BoxShape.circle,
                         color: Colors.white.withOpacity(0.1),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
@@ -343,14 +343,3 @@ class _JourneyCard extends StatelessWidget {
   }
 }
 
-// Hexagon clipper
-extension on BoxDecoration {
-  BoxDecoration hexagon() => this;
-}
-
-extension on ShapeDecoration {
-  static const hexagon = ShapeDecoration(
-    shape: StadiumBorder(),
-    color: Colors.transparent,
-  );
-}

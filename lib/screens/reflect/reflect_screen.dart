@@ -177,15 +177,16 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
     if (_journalController.text.trim().isEmpty) return;
     setState(() => _isSaving = true);
     await DbService.instance.saveJournalEntry(
-      JournalEntry()
-        ..createdAt = DateTime.now()
-        ..prompt =
-            'How can you apply "remember Me and I will remember you" in your work today?'
-        ..content = _journalController.text.trim()
-        ..linkedDeed = _selectedDeed
-        ..surahRef = _sampleAyah.ref
-        ..arabicAyah = _sampleAyah.arabic
-        ..isSaved = true,
+      JournalEntry(
+        createdAt: DateTime.now(),
+        prompt:
+            'How can you apply "remember Me and I will remember you" in your work today?',
+        content: _journalController.text.trim(),
+        linkedDeed: _selectedDeed,
+        surahRef: _sampleAyah.ref,
+        arabicAyah: _sampleAyah.arabic,
+        isSaved: true,
+      ),
     );
     ref.invalidate(journalEntriesProvider);
     setState(() => _isSaving = false);

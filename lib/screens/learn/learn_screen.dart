@@ -6,6 +6,7 @@ import '../../theme/app_typography.dart';
 import '../../providers/app_providers.dart';
 import '../../models/ayah_model.dart';
 import '../../services/audio_service.dart';
+import '../../services/quran_api_service.dart';
 import '../../widgets/nurpath_card.dart';
 import '../../widgets/audio_player_bar.dart';
 import '../../widgets/geometric_pattern.dart';
