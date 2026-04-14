@@ -37,8 +37,8 @@ dependencies:
   cached_network_image: ^3.3.1
   lottie: ^3.1.2
 
-  # Speech & TTS
-  speech_to_text: ^6.6.2
+  # Speech & TTS (speech_to_text excluded — js version conflict with isar 3.x)
+  # Re-add speech_to_text when upgrading to isar 4.x
   flutter_tts: ^4.0.2
 
   # Fonts & Icons
