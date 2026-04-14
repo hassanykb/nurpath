@@ -132,26 +132,44 @@ class HomeScreen extends ConsumerWidget {
                     onAction: () => context.go('/reflect'),
                   ),
                   const SizedBox(height: 12),
-                  dailyAyahAsync.when(
-                    data: (ayah) => AyahCard(
-                      arabic: ayah.arabicText,
-                      translation: ayah.translation,
-                      surahName: 'Surah ${ayah.surahNumber}',
-                      surahNumber: ayah.surahNumber,
-                      ayahNumber: ayah.ayahNumber,
-                      onPlay: () {},
-                      onShare: () {},
-                    ).animate().fadeIn(delay: 300.ms),
-                    loading: () => const _AyahCardSkeleton(),
-                    error: (e, _) => AyahCard(
-                      arabic: 'فَٱذْكُرُونِىٓ أَذْكُرْكُمْ وَٱشْكُرُوا۟ لِى وَلَا تَكْفُرُونِ',
-                      translation:
-                          'So remember Me; I will remember you. And be grateful to Me and do not deny Me.',
-                      surahName: 'Al-Baqarah',
-                      surahNumber: 2,
-                      ayahNumber: 152,
-                    ),
-                  ),
+                  Consumer(builder: (context, ref, child) {
+                    final isPlaying = ref.watch(isPlayingProvider);
+                    
+                    void togglePlay(int s, int a) {
+                      final audio = ref.read(audioServiceProvider);
+                      if (isPlaying) {
+                        audio.pause();
+                        ref.read(isPlayingProvider.notifier).state = false;
+                      } else {
+                        audio.playAyah(s, a);
+                        ref.read(isPlayingProvider.notifier).state = true;
+                      }
+                    }
+
+                    return dailyAyahAsync.when(
+                      data: (ayah) => AyahCard(
+                        arabic: ayah.arabicText,
+                        translation: ayah.translation,
+                        surahName: 'Surah ${ayah.surahNumber}',
+                        surahNumber: ayah.surahNumber,
+                        ayahNumber: ayah.ayahNumber,
+                        isPlaying: isPlaying,
+                        onPlay: () => togglePlay(ayah.surahNumber, ayah.ayahNumber),
+                        onShare: () {},
+                      ).animate().fadeIn(delay: 300.ms),
+                      loading: () => const _AyahCardSkeleton(),
+                      error: (e, _) => AyahCard(
+                        arabic: 'فَٱذْكُرُونِىٓ أَذْكُرْكُمْ وَٱشْكُرُوا۟ لِى وَلَا تَكْفُرُونِ',
+                        translation:
+                            'So remember Me; I will remember you. And be grateful to Me and do not deny Me.',
+                        surahName: 'Al-Baqarah',
+                        surahNumber: 2,
+                        ayahNumber: 152,
+                        isPlaying: isPlaying,
+                        onPlay: () => togglePlay(2, 152),
+                      ),
+                    );
+                  }),
 
                   const SizedBox(height: 24),
 

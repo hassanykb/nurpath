@@ -154,16 +154,33 @@ class JourneysScreen extends ConsumerWidget {
     WidgetRef ref,
     ThematicJourney journey,
   ) async {
-    journey.isActive = true;
-    if (journey.startedAt == null) journey.startedAt = DateTime.now();
+    String msg = '';
+    if (!journey.isActive) {
+      journey.isActive = true;
+      if (journey.startedAt == null) journey.startedAt = DateTime.now();
+      msg = 'Started: ${journey.title}. Bismillah! 🤲';
+    } else {
+      if (journey.completedDays < journey.totalDays) {
+        journey.completedDays++;
+        if (journey.completedDays == journey.totalDays) {
+          msg = 'Alhamdulillah! You completed: ${journey.title} 🎉';
+        } else {
+          msg = 'Day ${journey.completedDays} completed! Keep going. 🌟';
+        }
+      } else {
+        msg = 'You have already completed this journey! MashaAllah. ✨';
+      }
+    }
+    
     await DbService.instance.saveJourney(journey);
     ref.invalidate(journeysProvider);
 
-    if (context.mounted) {
+    if (context.mounted && msg.isNotEmpty) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Started: ${journey.title}. Bismillah! 🤲',
+            msg,
             style: AppTypography.bodyMedium,
           ),
           backgroundColor: AppColors.bgCardElevated,

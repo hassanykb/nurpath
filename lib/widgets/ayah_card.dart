@@ -14,6 +14,7 @@ class AyahCard extends StatelessWidget {
   final VoidCallback? onBookmark;
   final VoidCallback? onPlay;
   final VoidCallback? onShare;
+  final bool isPlaying;
 
   const AyahCard({
     super.key,
@@ -27,6 +28,7 @@ class AyahCard extends StatelessWidget {
     this.onBookmark,
     this.onPlay,
     this.onShare,
+    this.isPlaying = false,
   });
 
   @override
@@ -68,8 +70,8 @@ class AyahCard extends StatelessWidget {
                 ),
               if (onPlay != null)
                 IconButton(
-                  icon: const Icon(
-                    Icons.play_circle_outline,
+                  icon: Icon(
+                    isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
                     size: 20,
                     color: AppColors.emerald,
                   ),

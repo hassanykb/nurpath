@@ -21,148 +21,139 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
   bool _isRecording = false;
   final Set<int> _revealedCards = {};
 
-  // Sample ayahs for Surah Al-Fatiha
-  static const List<Map<String, String>> _fatihaAyahs = [
-    {
-      'arabic': 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
-      'translation': 'In the name of Allah, the Entirely Merciful, the Especially Merciful.',
-    },
-    {
-      'arabic': 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ',
-      'translation': 'All praise is due to Allah, Lord of the worlds.',
-    },
-    {
-      'arabic': 'ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
-      'translation': 'The Entirely Merciful, the Especially Merciful.',
-    },
-    {
-      'arabic': 'مَـٰلِكِ يَوْمِ ٱلدِّينِ',
-      'translation': 'Sovereign of the Day of Recompense.',
-    },
-    {
-      'arabic': 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
-      'translation': 'It is You we worship and You we ask for help.',
-    },
-    {
-      'arabic': 'ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ',
-      'translation': 'Guide us to the straight path.',
-    },
-    {
-      'arabic': 'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
-      'translation': 'The path of those upon whom You have bestowed favor, not of those who have earned anger or gone astray.',
-    },
-  ];
+
 
   @override
   Widget build(BuildContext context) {
-    final mastered = _revealedCards.length;
-    final total = _fatihaAyahs.length;
+    final srsCardsAsync = ref.watch(srsCardsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
-      body: GeometricPatternBackground(
-        color: AppColors.goldDark,
-        opacity: 0.03,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // ── Header ─────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  children: [
-                    const BackButton(color: AppColors.textPrimary),
-                    const Spacer(),
-                    Text(
-                      'Memorize - Surah Al-Fatiha',
-                      style: AppTypography.headlineSmall,
+    return srsCardsAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.bgPrimary,
+        body: Center(child: CircularProgressIndicator(color: AppColors.emerald)),
+      ),
+      error: (e, st) => Scaffold(
+        backgroundColor: AppColors.bgPrimary,
+        body: Center(child: Text('Error loading cards: $e')),
+      ),
+      data: (cards) {
+        // Build sets of mastered cards based on actual DB initial state + current session flips
+        final dbMastered = cards.where((c) => c.isMastered).map((c) => c.id).toSet();
+        final allMasteredIds = {...dbMastered, ..._revealedCards};
+        final total = cards.length;
+        final mastered = allMasteredIds.length;
+
+        return Scaffold(
+          backgroundColor: AppColors.bgPrimary,
+          body: GeometricPatternBackground(
+            color: AppColors.goldDark,
+            opacity: 0.03,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // ── Header ─────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        const BackButton(color: AppColors.textPrimary),
+                        const Spacer(),
+                        Text(
+                          'Memorize - Surah Al-Fatiha',
+                          style: AppTypography.headlineSmall,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.settings_outlined,
+                              color: AppColors.textSecondary, size: 20),
+                          onPressed: () {},
+                        ),
+                      ],
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.settings_outlined,
-                          color: AppColors.textSecondary, size: 20),
-                      onPressed: () {},
+                  ),
+
+                  // ── Juz Selector ──────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _JuzChip(label: 'Juz', isSelected: false),
+                        const SizedBox(width: 8),
+                        _JuzChip(label: 'Juz 1: 1-7', isSelected: true),
+                        const SizedBox(width: 8),
+                        _JuzChip(label: 'Ard', isSelected: false),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // ── Juz Selector ──────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _JuzChip(label: 'Juz', isSelected: false),
-                    const SizedBox(width: 8),
-                    _JuzChip(label: 'Juz 1: 1-7', isSelected: true),
-                    const SizedBox(width: 8),
-                    _JuzChip(label: 'Ard', isSelected: false),
-                  ],
-                ),
-              ),
-
-              // ── Cards Grid ────────────────────────────────
-              Expanded(
-                child: Stack(
-                  children: [
-                    // Audio play button (left)
-                    Positioned(
-                      left: 8,
-                      top: 0,
-                      bottom: 100,
-                      child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.bgCard,
-                            border: Border.all(
-                                color: AppColors.divider, width: 0.5),
-                          ),
-                          child: const Icon(
-                            Icons.volume_up_rounded,
-                            color: AppColors.textSecondary,
-                            size: 20,
+                  // ── Cards Grid ────────────────────────────────
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Audio play button (left)
+                        Positioned(
+                          left: 8,
+                          top: 0,
+                          bottom: 100,
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.bgCard,
+                                border: Border.all(
+                                    color: AppColors.divider, width: 0.5),
+                              ),
+                              child: const Icon(
+                                Icons.volume_up_rounded,
+                                color: AppColors.textSecondary,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    // Cards grid
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(56, 8, 16, 8),
-                      child: GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 0.85,
+                        // Cards grid
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(56, 8, 16, 8),
+                          child: GridView.builder(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                              childAspectRatio: 0.85,
+                            ),
+                            itemCount: cards.length,
+                            itemBuilder: (ctx, i) {
+                              final card = cards[i];
+                              final isRevealed = allMasteredIds.contains(card.id);
+                              
+                              return _SRSCard(
+                                arabic: card.arabicText,
+                                isRevealed: isRevealed,
+                                onReveal: () async {
+                                  setState(() {
+                                    if (isRevealed) {
+                                      _revealedCards.remove(card.id);
+                                    } else {
+                                      _revealedCards.add(card.id);
+                                    }
+                                  });
+                                  card.isMastered = !isRevealed;
+                                  await DbService.instance.saveSRSCard(card);
+                                  ref.invalidate(srsCardsProvider);
+                                },
+                              ).animate().fadeIn(
+                                    delay: Duration(milliseconds: i * 60),
+                                  );
+                            },
+                          ),
                         ),
-                        itemCount: _fatihaAyahs.length,
-                        itemBuilder: (ctx, i) {
-                          final ayah = _fatihaAyahs[i];
-                          final isRevealed = _revealedCards.contains(i);
-                          return _SRSCard(
-                            arabic: ayah['arabic']!,
-                            isRevealed: isRevealed,
-                            onReveal: () => setState(() {
-                              if (isRevealed) {
-                                _revealedCards.remove(i);
-                              } else {
-                                _revealedCards.add(i);
-                              }
-                            }),
-                          ).animate().fadeIn(
-                                delay: Duration(milliseconds: i * 60),
-                              );
-                        },
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
               // ── Progress Bar ──────────────────────────────
               Padding(
@@ -326,8 +317,9 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
               ),
             ],
           ),
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

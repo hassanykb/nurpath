@@ -93,6 +93,22 @@ class DbService {
         ).toMap(),
       );
     }
+
+    final srsBox = Hive.box(_srsBox);
+    if (srsBox.isEmpty) {
+      final srsDefaults = [
+        SRSCard(surahNumber: 1, ayahNumber: 1, arabicText: 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ', translation: 'In the name of Allah, the Entirely Merciful, the Especially Merciful.', isMastered: false, retentionStrength: 0.2),
+        SRSCard(surahNumber: 1, ayahNumber: 2, arabicText: 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ', translation: 'All praise is due to Allah, Lord of the worlds.', isMastered: false, retentionStrength: 0.5),
+        SRSCard(surahNumber: 1, ayahNumber: 3, arabicText: 'ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ', translation: 'The Entirely Merciful, the Especially Merciful.', isMastered: true, retentionStrength: 0.95),
+        SRSCard(surahNumber: 1, ayahNumber: 4, arabicText: 'مَـٰلِكِ يَوْمِ ٱلدِّينِ', translation: 'Sovereign of the Day of Recompense.', isMastered: false, retentionStrength: 0.1),
+        SRSCard(surahNumber: 1, ayahNumber: 5, arabicText: 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ', translation: 'It is You we worship and You we ask for help.', isMastered: false, retentionStrength: 0.3),
+        SRSCard(surahNumber: 1, ayahNumber: 6, arabicText: 'ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ', translation: 'Guide us to the straight path.', isMastered: true, retentionStrength: 0.8),
+        SRSCard(surahNumber: 1, ayahNumber: 7, arabicText: 'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ', translation: 'The path of those upon whom You have bestowed favor, not of those who have earned anger or gone astray.', isMastered: false, retentionStrength: 0.0),
+      ];
+      for (final card in srsDefaults) {
+        await srsBox.put(card.id, card.toMap());
+      }
+    }
   }
 
   // ── User ──────────────────────────────────────────────────────────────────

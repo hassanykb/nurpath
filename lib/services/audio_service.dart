@@ -9,13 +9,13 @@ class NurPathAudioService {
   final AudioPlayer _player = AudioPlayer();
 
   static const Map<String, String> reciters = {
-    'Mishary Rashid Alafasy': 'ar.alafasy',
-    'Abdul Rahman Al-Sudais': 'ar.abdurrahmaansudais',
-    'Mahmoud Khalil Al-Husary': 'ar.husary',
-    'Abu Bakr Al-Shatri': 'ar.shaatree',
+    'Mishary Rashid Alafasy': 'Alafasy_128kbps',
+    'Abdul Rahman Al-Sudais': 'Abdurrahmaan_As-Sudais_192kbps',
+    'Mahmoud Khalil Al-Husary': 'Husary_128kbps',
+    'Abu Bakr Al-Shatri': 'Abu_Bakr_Ash-Shaatree_128kbps',
   };
 
-  String _currentReciter = 'ar.alafasy';
+  String _currentReciter = 'Alafasy_128kbps';
   String _currentReciterName = 'Mishary Rashid Alafasy';
 
   AudioPlayer get player => _player;
@@ -28,15 +28,14 @@ class NurPathAudioService {
 
   void setReciter(String reciterName) {
     _currentReciterName = reciterName;
-    _currentReciter = reciters[reciterName] ?? 'ar.alafasy';
+    _currentReciter = reciters[reciterName] ?? 'Alafasy_128kbps';
   }
 
   String _buildAudioUrl(int surahNumber, int ayahNumber) {
-    // CDN format: https://cdn.islamic.network/quran/audio/128/{edition}/{ayahGlobalNumber}.mp3
-    // Global ayah number calculation (approximate - real app would use lookup table)
+    // CDN format: https://everyayah.com/data/{reciter}/{surah}{ayah}.mp3
     final paddedSurah = surahNumber.toString().padLeft(3, '0');
     final paddedAyah = ayahNumber.toString().padLeft(3, '0');
-    return 'https://cdn.islamic.network/quran/audio/128/$_currentReciter/$paddedSurah$paddedAyah.mp3';
+    return 'https://everyayah.com/data/$_currentReciter/$paddedSurah$paddedAyah.mp3';
   }
 
   Future<void> playAyah(int surahNumber, int ayahNumber) async {
