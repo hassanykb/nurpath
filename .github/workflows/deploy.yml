@@ -54,32 +54,7 @@ jobs:
 
       # ── 5. Generate web/icons placeholders ────────────────────────────────
       - name: Create web icon placeholders
-        run: |
-          mkdir -p web/icons
-          # Generate minimal valid 192×192 and 512×512 PNG placeholders
-          python3 - <<'EOF'
-import struct, zlib, os
-
-def make_png(size, color=(10, 108, 94)):
-    def chunk(name, data):
-        c = struct.pack('>I', len(data)) + name + data
-        return c + struct.pack('>I', zlib.crc32(c[4:]) & 0xffffffff)
-    r, g, b = color
-    raw = b''
-    for _ in range(size):
-        row = b'\x00' + bytes([r, g, b, 255] * size)
-        raw += row
-    return (b'\x89PNG\r\n\x1a\n'
-            + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
-            + chunk(b'IDAT', zlib.compress(raw))
-            + chunk(b'IEND', b''))
-
-for name, size in [('Icon-192.png',192),('Icon-512.png',512),
-                   ('Icon-maskable-192.png',192),('Icon-maskable-512.png',512)]:
-    with open(f'web/icons/{name}', 'wb') as f:
-        f.write(make_png(size))
-print("Icons generated.")
-EOF
+        run: python3 web/generate_icons.py
 
       # ── 6. Install dependencies ────────────────────────────────────────────
       - name: flutter pub get
