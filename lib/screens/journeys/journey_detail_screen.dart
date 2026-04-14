@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../models/user_model.dart';
@@ -238,6 +239,9 @@ class JourneyDetailScreen extends ConsumerWidget {
                       lesson: lesson,
                       isDone: isDone,
                       isCurrent: isCurrent,
+                      isLastInList: i == journey.dailyLessons.length - 1,
+                      onOpenSurah: () => _openSurahFromLesson(context, lesson),
+                      onReflect: () => _reflectOnLesson(context, lesson, i),
                     ).animate().fadeIn(delay: Duration(milliseconds: 250 + i * 30));
                   }),
 
@@ -277,6 +281,30 @@ class JourneyDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Extracts a surah number from a lesson string like "Read Yusuf 12:4-6" → 12
+  int? _extractSurahNumber(String lesson) {
+    // Look for patterns like "12:4", "12:4-6", "2:155", etc.
+    final match = RegExp(r'\b(\d{1,3}):\d').firstMatch(lesson);
+    if (match != null) {
+      final n = int.tryParse(match.group(1)!);
+      if (n != null && n >= 1 && n <= 114) return n;
+    }
+    return null;
+  }
+
+  void _openSurahFromLesson(BuildContext context, String lesson) {
+    final surahNum = _extractSurahNumber(lesson);
+    if (surahNum != null) {
+      context.go('/learn/surah/$surahNum');
+    } else {
+      context.go('/quran');
+    }
+  }
+
+  void _reflectOnLesson(BuildContext context, String lesson, int dayIndex) {
+    context.go('/reflect');
   }
 
   Future<void> _continueJourney(BuildContext context, WidgetRef ref) async {
@@ -411,13 +439,22 @@ class _LessonTile extends StatelessWidget {
   final String lesson;
   final bool isDone;
   final bool isCurrent;
+  final bool isLastInList;
+  final VoidCallback onOpenSurah;
+  final VoidCallback onReflect;
 
   const _LessonTile({
     required this.index,
     required this.lesson,
     required this.isDone,
     required this.isCurrent,
+    required this.isLastInList,
+    required this.onOpenSurah,
+    required this.onReflect,
   });
+
+  /// Returns true if the lesson text references a Quran ayah (e.g. "12:4")
+  bool get _hasAyahRef => RegExp(r'\b\d{1,3}:\d').hasMatch(lesson);
 
   @override
   Widget build(BuildContext context) {
@@ -426,7 +463,7 @@ class _LessonTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline node
+          // Timeline node + connector line
           Column(
             children: [
               Container(
@@ -463,11 +500,13 @@ class _LessonTile extends StatelessWidget {
                         ),
                 ),
               ),
-              if (index < 29)
+              if (!isLastInList)
                 Container(
                   width: 1,
-                  height: 24,
-                  color: isDone ? AppColors.emerald.withOpacity(0.4) : AppColors.divider,
+                  height: isCurrent ? 80 : 24,
+                  color: isDone
+                      ? AppColors.emerald.withOpacity(0.4)
+                      : AppColors.divider,
                 ),
             ],
           ),
@@ -475,37 +514,108 @@ class _LessonTile extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Container(
-                padding: isCurrent
-                    ? const EdgeInsets.all(12)
-                    : EdgeInsets.zero,
-                decoration: isCurrent
-                    ? BoxDecoration(
+              child: isCurrent
+                  ? Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
                         color: AppColors.gold.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.gold.withOpacity(0.25),
+                          color: AppColors.gold.withOpacity(0.3),
                           width: 1,
                         ),
-                      )
-                    : null,
-                child: Text(
-                  lesson,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: isDone
-                        ? AppColors.textMuted
-                        : isCurrent
-                            ? AppColors.textPrimary
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lesson,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textPrimary,
+                              height: 1.6,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Action buttons for current lesson
+                          Row(
+                            children: [
+                              if (_hasAyahRef)
+                                _LessonActionButton(
+                                  icon: Icons.menu_book_rounded,
+                                  label: 'Open Surah',
+                                  color: AppColors.emerald,
+                                  onTap: onOpenSurah,
+                                ),
+                              if (_hasAyahRef) const SizedBox(width: 8),
+                              _LessonActionButton(
+                                icon: Icons.edit_note_rounded,
+                                label: 'Reflect',
+                                color: AppColors.gold,
+                                onTap: onReflect,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(
+                      lesson,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: isDone
+                            ? AppColors.textMuted
                             : AppColors.textSecondary,
-                    height: 1.5,
-                    decoration: isDone ? TextDecoration.lineThrough : null,
-                    decorationColor: AppColors.textMuted,
-                  ),
-                ),
-              ),
+                        height: 1.5,
+                        decoration:
+                            isDone ? TextDecoration.lineThrough : null,
+                        decorationColor: AppColors.textMuted,
+                      ),
+                    ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LessonActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _LessonActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.35), width: 0.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: color,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

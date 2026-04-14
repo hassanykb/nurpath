@@ -269,6 +269,7 @@ class ThematicJourney {
   final String surahReference;
   final int totalDays;
   final List<String> dailyLessons;
+  final String category;
   int completedDays;
   bool isActive;
   DateTime? startedAt;
@@ -282,6 +283,7 @@ class ThematicJourney {
     required this.totalDays,
     this.description = '',
     this.dailyLessons = const [],
+    this.category = 'Thematic',
     this.completedDays = 0,
     this.isActive = false,
     this.startedAt,
@@ -304,6 +306,7 @@ class ThematicJourney {
         'surahReference': surahReference,
         'totalDays': totalDays,
         'dailyLessons': dailyLessons,
+        'category': category,
         'completedDays': completedDays,
         'isActive': isActive,
         'startedAt': startedAt?.toIso8601String(),
@@ -318,6 +321,7 @@ class ThematicJourney {
         surahReference: (m['surahReference'] as String?) ?? '',
         totalDays: (m['totalDays'] as int?) ?? 0,
         dailyLessons: (m['dailyLessons'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        category: (m['category'] as String?) ?? 'Thematic',
         completedDays: (m['completedDays'] as int?) ?? 0,
         isActive: (m['isActive'] as bool?) ?? false,
         startedAt: m['startedAt'] != null

@@ -6,11 +6,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../providers/app_providers.dart';
+import '../../models/user_model.dart';
 import '../../widgets/geometric_pattern.dart';
 import '../../widgets/nurpath_card.dart';
 import '../../widgets/faith_ring.dart';
 import '../../widgets/streak_badge.dart';
 import '../../widgets/ayah_card.dart';
+import '../journeys/journey_detail_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -717,42 +719,80 @@ class _QuickAction {
 }
 
 class _JourneysPreviewRow extends StatelessWidget {
-  final List<dynamic> journeys;
+  final List<ThematicJourney> journeys;
 
   const _JourneysPreviewRow({required this.journeys});
+
+  static const List<List<Color>> _gradients = [
+    [AppColors.emerald, AppColors.emeraldDeep],
+    [Color(0xFF2C4A6B), Color(0xFF1A2E44)],
+  ];
+
+  static const List<String> _emojis = ['🕌', '🤲', '🌿', '📖'];
+
+  void _openDetail(BuildContext context, ThematicJourney journey) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => JourneyDetailScreen(journey: journey),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: journeys.asMap().entries.map((entry) {
+        final i = entry.key;
         final j = entry.value;
+        final colors = _gradients[i % _gradients.length];
+        final emoji = _emojis[i % _emojis.length];
+
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: entry.key == 0 ? 8 : 0),
+            padding: EdgeInsets.only(right: i == 0 ? 8 : 0),
             child: NurPathCard(
-              onTap: () => context.go('/journeys'),
+              onTap: () => _openDetail(context, j),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Gradient header
+                  // Gradient header with emoji
                   Container(
                     height: 80,
                     decoration: BoxDecoration(
-                      gradient: AppColors.emeraldGradient,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: colors,
+                      ),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
                     ),
                     child: Stack(
                       children: [
+                        Center(
+                          child: Text(emoji,
+                              style: const TextStyle(fontSize: 30)),
+                        ),
+                        if (j.completedDays > 0)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: LinearProgressIndicator(
+                              value: j.progress,
+                              backgroundColor:
+                                  Colors.black.withOpacity(0.3),
+                              color: AppColors.gold,
+                              minHeight: 3,
+                            ),
+                          ),
                         Positioned(
                           right: 8,
                           bottom: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(6),
@@ -789,18 +829,23 @@ class _JourneysPreviewRow extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () => context.go('/journeys'),
+                            onPressed: () => _openDetail(context, j),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.emerald,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              backgroundColor: j.isActive
+                                  ? AppColors.gold
+                                  : AppColors.emerald,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                             child: Text(
-                              'Start Journey',
+                              j.isActive ? 'Continue' : 'Start Journey',
                               style: AppTypography.labelSmall.copyWith(
-                                color: Colors.white,
+                                color: j.isActive
+                                    ? AppColors.textOnGold
+                                    : Colors.white,
                                 fontSize: 11,
                               ),
                             ),

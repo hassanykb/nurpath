@@ -45,6 +45,7 @@ class DbService {
         title: 'Healing the Heart in Trials',
         subtitle: 'Surah Yusuf',
         surahReference: 'Surah Yusuf (12)',
+        category: 'Healing',
         totalDays: 7,
         completedDays: 3,
         description:
@@ -64,6 +65,7 @@ class DbService {
         title: 'Building Patience as a Parent',
         subtitle: 'Parenting with Sabr',
         surahReference: 'Various Surahs',
+        category: 'Parenting',
         totalDays: 14,
         description:
             'Parenting is one of Allah\'s greatest tests and greatest gifts. This 14-day program draws on Quranic wisdom about raising children with love, boundaries, and deep trust in Allah\'s plan for your family.',
@@ -89,6 +91,7 @@ class DbService {
         title: 'Gratitude in Daily Life',
         subtitle: 'The Power of Shukr',
         surahReference: 'Al-Baqarah (2)',
+        category: 'Gratitude',
         totalDays: 10,
         description:
             'Allah promises: "If you are grateful, I will surely increase you." This 10-day journey trains your heart to notice, name, and express gratitude through Quranic reflection and daily practical acts of shukr.',
@@ -110,6 +113,7 @@ class DbService {
         title: 'Stories of the Prophets',
         subtitle: 'Lessons for Today',
         surahReference: 'Multiple Surahs',
+        category: 'Prophets',
         totalDays: 30,
         description:
             'The Quran calls stories of the Prophets "the best of stories." This 30-day journey visits 10 major Prophets — 3 days per Prophet — drawing timeless lessons for modern life from each of their tests, triumphs, and character.',
