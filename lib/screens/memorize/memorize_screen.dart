@@ -19,7 +19,7 @@ class MemorizeScreen extends ConsumerStatefulWidget {
 class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
   int _currentSurah = 1;
   bool _isRecording = false;
-  final Set<int> _revealedCards = {};
+  final Set<String> _revealedCards = {};
 
 
 
@@ -323,11 +323,12 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                 ),
               ),
             ],
-          ),
-          ),
-        );
-      },
-    );
+          ), // Column
+        ), // SafeArea
+      ), // GeometricPatternBackground
+    ); // Scaffold
+  },
+);
   }
 }
 
