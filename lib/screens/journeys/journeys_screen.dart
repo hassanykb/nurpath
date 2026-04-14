@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../services/db_service.dart';
 import '../../widgets/geometric_pattern.dart';
 import '../../widgets/nurpath_card.dart';
+import 'journey_detail_screen.dart';
 
 class JourneysScreen extends ConsumerWidget {
   const JourneysScreen({super.key});
@@ -125,6 +126,12 @@ class JourneysScreen extends ConsumerWidget {
                       (ctx, i) => _JourneyCard(
                         journey: journeys[i],
                         index: i,
+                        onTap: () => Navigator.push(
+                          ctx,
+                          MaterialPageRoute(
+                            builder: (_) => JourneyDetailScreen(journey: journeys[i]),
+                          ),
+                        ).then((_) => ref.invalidate(journeysProvider)),
                         onStart: () => _startJourney(ctx, ref, journeys[i]),
                       ).animate().fadeIn(
                             delay: Duration(milliseconds: i * 80),
@@ -202,11 +209,13 @@ class _JourneyCard extends StatelessWidget {
   final ThematicJourney journey;
   final int index;
   final VoidCallback onStart;
+  final VoidCallback onTap;
 
   const _JourneyCard({
     required this.journey,
     required this.index,
     required this.onStart,
+    required this.onTap,
   });
 
   // Gradient variation by index
@@ -225,7 +234,9 @@ class _JourneyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NurPathCard(
+    return GestureDetector(
+      onTap: onTap,
+      child: NurPathCard(
       showBorder: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -356,7 +367,8 @@ class _JourneyCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ), // NurPathCard
+    ); // GestureDetector
   }
 
   String _journeyEmoji(int index) {

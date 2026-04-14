@@ -265,8 +265,10 @@ class ThematicJourney {
   final String id;
   final String title;
   final String subtitle;
+  final String description;
   final String surahReference;
   final int totalDays;
+  final List<String> dailyLessons;
   int completedDays;
   bool isActive;
   DateTime? startedAt;
@@ -278,6 +280,8 @@ class ThematicJourney {
     required this.subtitle,
     required this.surahReference,
     required this.totalDays,
+    this.description = '',
+    this.dailyLessons = const [],
     this.completedDays = 0,
     this.isActive = false,
     this.startedAt,
@@ -286,12 +290,20 @@ class ThematicJourney {
 
   double get progress => totalDays > 0 ? completedDays / totalDays : 0.0;
 
+  /// The lesson for today (current day), or the last one if complete.
+  String get todayLesson {
+    final idx = (completedDays).clamp(0, dailyLessons.length - 1);
+    return dailyLessons.isNotEmpty ? dailyLessons[idx] : '';
+  }
+
   Map<String, dynamic> toMap() => {
         'id': id,
         'title': title,
         'subtitle': subtitle,
+        'description': description,
         'surahReference': surahReference,
         'totalDays': totalDays,
+        'dailyLessons': dailyLessons,
         'completedDays': completedDays,
         'isActive': isActive,
         'startedAt': startedAt?.toIso8601String(),
@@ -302,8 +314,10 @@ class ThematicJourney {
         id: (m['id'] as String?) ?? '',
         title: (m['title'] as String?) ?? '',
         subtitle: (m['subtitle'] as String?) ?? '',
+        description: (m['description'] as String?) ?? '',
         surahReference: (m['surahReference'] as String?) ?? '',
         totalDays: (m['totalDays'] as int?) ?? 0,
+        dailyLessons: (m['dailyLessons'] as List?)?.map((e) => e.toString()).toList() ?? [],
         completedDays: (m['completedDays'] as int?) ?? 0,
         isActive: (m['isActive'] as bool?) ?? false,
         startedAt: m['startedAt'] != null
