@@ -68,7 +68,7 @@ class HomeScreen extends ConsumerWidget {
                       Icons.notifications_outlined,
                       color: AppColors.textSecondary,
                     ),
-                    onPressed: () {},
+                    onPressed: () => _showNotificationsSheet(context),
                   ),
                 ],
               ),
@@ -155,7 +155,14 @@ class HomeScreen extends ConsumerWidget {
                         ayahNumber: ayah.ayahNumber,
                         isPlaying: isPlaying,
                         onPlay: () => togglePlay(ayah.surahNumber, ayah.ayahNumber),
-                        onShare: () {},
+                        onShare: () => _shareAyah(context, ayah.arabicText, ayah.translation,
+                            'Surah ${ayah.surahNumber}:${ayah.ayahNumber}'),
+                        onAsk: () => _showAskAyahSheet(
+                          context,
+                          arabic: ayah.arabicText,
+                          translation: ayah.translation,
+                          ref: '${ayah.surahNumber}:${ayah.ayahNumber}',
+                        ),
                       ).animate().fadeIn(delay: 300.ms),
                       loading: () => const _AyahCardSkeleton(),
                       error: (e, _) => AyahCard(
@@ -167,6 +174,13 @@ class HomeScreen extends ConsumerWidget {
                         ayahNumber: 152,
                         isPlaying: isPlaying,
                         onPlay: () => togglePlay(2, 152),
+                        onAsk: () => _showAskAyahSheet(
+                          context,
+                          arabic: 'فَٱذْكُرُونِىٓ أَذْكُرْكُمْ وَٱشْكُرُوا۟ لِى وَلَا تَكْفُرُونِ',
+                          translation:
+                              'So remember Me; I will remember you. And be grateful to Me and do not deny Me.',
+                          ref: '2:152',
+                        ),
                       ),
                     );
                   }),
@@ -228,6 +242,163 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Notifications', style: AppTypography.headlineMedium),
+            const SizedBox(height: 16),
+            _NotifTile(
+              icon: Icons.wb_sunny_rounded,
+              color: AppColors.gold,
+              title: 'Daily Verse Ready',
+              body: 'Your Verse of the Day has been loaded. Take a moment to reflect.',
+              time: 'Now',
+            ),
+            const SizedBox(height: 10),
+            _NotifTile(
+              icon: Icons.psychology_rounded,
+              color: AppColors.emerald,
+              title: 'Memorization Review',
+              body: 'You have cards due for review today. Keep your streak alive!',
+              time: 'Today',
+            ),
+            const SizedBox(height: 10),
+            _NotifTile(
+              icon: Icons.route_rounded,
+              color: AppColors.ringSalah,
+              title: 'Journey Reminder',
+              body: 'Continue your spiritual journey — one day at a time.',
+              time: 'Yesterday',
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAskAyahSheet(
+    BuildContext context, {
+    required String arabic,
+    required String translation,
+    required String ref,
+  }) {
+    final controller = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: AppColors.emerald, size: 20),
+                const SizedBox(width: 8),
+                Text('Ask about this Ayah', style: AppTypography.headlineMedium),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              ref,
+              style: AppTypography.surahRef,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.bgCardElevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider, width: 0.5),
+              ),
+              child: Text(
+                translation,
+                style: AppTypography.bodySmall.copyWith(height: 1.6),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLines: 3,
+              style: AppTypography.bodyMedium,
+              decoration: InputDecoration(
+                hintText: 'e.g. What does this ayah teach about gratitude?',
+                hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textDisabled),
+                filled: true,
+                fillColor: AppColors.bgCardElevated,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(14),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'AI reflection coming soon — Bismillah! 🤲',
+                        style: AppTypography.bodyMedium,
+                      ),
+                      backgroundColor: AppColors.bgCardElevated,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.emerald,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Ask'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareAyah(BuildContext context, String arabic, String translation, String ref) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('"$translation" — $ref', style: AppTypography.bodySmall),
+        backgroundColor: AppColors.bgCardElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        action: SnackBarAction(label: 'Copy', textColor: AppColors.gold, onPressed: () {}),
       ),
     );
   }
@@ -646,12 +817,119 @@ class _AyahCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _ShimmerBox(
+      child: Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2), width: 0.5),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShimmerBox extends StatefulWidget {
+  final Widget child;
+  const _ShimmerBox({required this.child});
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) => Opacity(opacity: _anim.value, child: child),
+      child: widget.child,
+    );
+  }
+}
+
+class _NotifTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String body;
+  final String time;
+
+  const _NotifTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.body,
+    required this.time,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      height: 200,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.bgCardElevated,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.divider, width: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.15),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(title, style: AppTypography.titleMedium),
+                    const Spacer(),
+                    Text(time,
+                        style: AppTypography.labelSmall
+                            .copyWith(color: AppColors.textMuted, fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(body,
+                    style: AppTypography.bodySmall.copyWith(height: 1.4),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

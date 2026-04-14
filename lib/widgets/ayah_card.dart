@@ -14,6 +14,7 @@ class AyahCard extends StatelessWidget {
   final VoidCallback? onBookmark;
   final VoidCallback? onPlay;
   final VoidCallback? onShare;
+  final VoidCallback? onAsk;
   final bool isPlaying;
 
   const AyahCard({
@@ -28,6 +29,7 @@ class AyahCard extends StatelessWidget {
     this.onBookmark,
     this.onPlay,
     this.onShare,
+    this.onAsk,
     this.isPlaying = false,
   });
 
@@ -38,7 +40,7 @@ class AyahCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Surah reference header
+          // ── Surah reference header ──────────────────────────
           Row(
             children: [
               Container(
@@ -81,11 +83,7 @@ class AyahCard extends StatelessWidget {
                 ),
               if (onShare != null)
                 IconButton(
-                  icon: const Icon(
-                    Icons.share_rounded,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
+                  icon: const Icon(Icons.share_rounded, size: 18, color: AppColors.textMuted),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   onPressed: onShare,
@@ -93,10 +91,9 @@ class AyahCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Bismillah divider
           const _BismillahDivider(),
           const SizedBox(height: 16),
-          // Arabic text
+          // ── Arabic text ──────────────────────────────────────
           Text(
             arabic,
             style: AppTypography.arabicLarge,
@@ -106,11 +103,37 @@ class AyahCard extends StatelessWidget {
           const SizedBox(height: 16),
           Container(height: 0.5, color: AppColors.divider),
           const SizedBox(height: 12),
-          // Translation
-          Text(
-            translation,
-            style: AppTypography.bodyMedium,
-          ),
+          // ── Translation ──────────────────────────────────────
+          Text(translation, style: AppTypography.bodyMedium),
+          // ── Ask about this Ayah ──────────────────────────────
+          if (onAsk != null) ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: onAsk,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.emerald.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.emerald.withOpacity(0.25),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 15, color: AppColors.emerald),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ask about this Ayah',
+                      style: AppTypography.labelMedium.copyWith(color: AppColors.emerald),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -127,11 +150,7 @@ class _BismillahDivider extends StatelessWidget {
         Expanded(child: Container(height: 0.5, color: AppColors.divider)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Icon(
-            Icons.auto_awesome,
-            size: 12,
-            color: AppColors.gold.withOpacity(0.6),
-          ),
+          child: Icon(Icons.auto_awesome, size: 12, color: AppColors.gold.withOpacity(0.6)),
         ),
         Expanded(child: Container(height: 0.5, color: AppColors.divider)),
       ],
@@ -172,15 +191,12 @@ class AyahListTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ayah number badge
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isActive
-                    ? AppColors.emerald
-                    : AppColors.bgCardElevated,
+                color: isActive ? AppColors.emerald : AppColors.bgCardElevated,
                 border: Border.all(
                   color: isActive ? AppColors.emerald : AppColors.divider,
                   width: 0.5,
