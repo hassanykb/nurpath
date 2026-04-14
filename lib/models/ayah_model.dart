@@ -1,44 +1,78 @@
-import 'package:isar/isar.dart';
+// Plain Dart models — no Isar dependency, fully web-compatible.
 
-part 'ayah_model.g.dart';
-
-@collection
 class AyahModel {
-  Id id = Isar.autoIncrement;
-
-  @Index(composite: [CompositeIndex('ayahNumber')])
-  late int surahNumber;
-
-  late int ayahNumber;
-  late String arabicText;
-  late String translation;
-  late String transliteration;
-
-  @Index()
-  bool isBookmarked = false;
-
-  bool isRead = false;
+  final String id; // "$surahNumber:$ayahNumber"
+  final int surahNumber;
+  final int ayahNumber;
+  final String arabicText;
+  final String translation;
+  final String transliteration;
+  bool isBookmarked;
+  bool isRead;
   DateTime? lastReadAt;
   String? audioUrl;
+
+  AyahModel({
+    required this.surahNumber,
+    required this.ayahNumber,
+    required this.arabicText,
+    required this.translation,
+    this.transliteration = '',
+    this.isBookmarked = false,
+    this.isRead = false,
+    this.lastReadAt,
+    this.audioUrl,
+  }) : id = '$surahNumber:$ayahNumber';
+
+  Map<String, dynamic> toMap() => {
+        'surahNumber': surahNumber,
+        'ayahNumber': ayahNumber,
+        'arabicText': arabicText,
+        'translation': translation,
+        'transliteration': transliteration,
+        'isBookmarked': isBookmarked,
+        'isRead': isRead,
+        'lastReadAt': lastReadAt?.toIso8601String(),
+        'audioUrl': audioUrl,
+      };
+
+  factory AyahModel.fromMap(Map<dynamic, dynamic> m) => AyahModel(
+        surahNumber: m['surahNumber'] as int,
+        ayahNumber: m['ayahNumber'] as int,
+        arabicText: m['arabicText'] as String,
+        translation: m['translation'] as String,
+        transliteration: (m['transliteration'] as String?) ?? '',
+        isBookmarked: (m['isBookmarked'] as bool?) ?? false,
+        isRead: (m['isRead'] as bool?) ?? false,
+        lastReadAt: m['lastReadAt'] != null
+            ? DateTime.tryParse(m['lastReadAt'] as String)
+            : null,
+        audioUrl: m['audioUrl'] as String?,
+      );
 }
 
-@collection
 class SurahModel {
-  Id id = Isar.autoIncrement;
+  final int number;
+  final String nameArabic;
+  final String nameEnglish;
+  final String nameTransliteration;
+  final String revelationType;
+  final int ayahCount;
+  double readProgress;
 
-  @Index(unique: true)
-  late int number;
-
-  late String nameArabic;
-  late String nameEnglish;
-  late String nameTransliteration;
-  late String revelationType; // Meccan / Medinan
-  late int ayahCount;
-  String? description;
-  double readProgress = 0.0;
+  SurahModel({
+    required this.number,
+    required this.nameArabic,
+    required this.nameEnglish,
+    required this.nameTransliteration,
+    required this.revelationType,
+    required this.ayahCount,
+    this.readProgress = 0.0,
+  });
 }
 
-// Plain data class for API responses (not persisted)
+// ── API DTOs ──────────────────────────────────────────────────────────────────
+
 class AyahData {
   final int surahNumber;
   final int ayahNumber;
@@ -52,7 +86,8 @@ class AyahData {
     required this.translation,
   });
 
-  factory AyahData.fromJson(Map<String, dynamic> json, {String? translationText}) {
+  factory AyahData.fromJson(Map<String, dynamic> json,
+      {String? translationText}) {
     return AyahData(
       surahNumber: json['surah']?['number'] ?? 0,
       ayahNumber: json['numberInSurah'] ?? 0,

@@ -1,108 +1,357 @@
-import 'package:isar/isar.dart';
+// Plain Dart models — no Isar dependency, fully web-compatible.
 
-part 'user_model.g.dart';
-
-@collection
 class UserProfile {
-  Id id = 1; // singleton
-
-  String name = 'Hassan';
+  String name;
   String? lastName;
-  String language = 'en';
-  bool onboardingComplete = false;
+  String language;
+  bool onboardingComplete;
   DateTime? joinedAt;
 
   // Goals
-  int dailyAyahGoal = 5;
-  bool nightlyReflectionGoal = true;
-  bool deepStudyGoal = false;
+  int dailyAyahGoal;
+  bool nightlyReflectionGoal;
+  bool deepStudyGoal;
 
   // Streak
-  int currentStreak = 0;
-  int longestStreak = 0;
+  int currentStreak;
+  int longestStreak;
   DateTime? lastActiveDate;
 
   // Faith Score
-  int faithScore = 0;
-  double quranEngagement = 0.0;
-  double heartReflection = 0.0;
-  double salahAlignment = 0.0;
-  double actsOfKindness = 0.0;
+  int faithScore;
+  double quranEngagement;
+  double heartReflection;
+  double salahAlignment;
+  double actsOfKindness;
 
   // Settings
-  bool offlineMode = false;
-  bool bismillahOption = true;
-  bool guiltFreeReminders = true;
-  String reciterName = 'Mishary Rashid Alafasy';
-  double playbackSpeed = 1.0;
-  bool wordByWordEnabled = false;
+  bool offlineMode;
+  bool bismillahOption;
+  bool guiltFreeReminders;
+  String reciterName;
+  double playbackSpeed;
+  bool wordByWordEnabled;
+
+  UserProfile({
+    this.name = 'Hassan',
+    this.lastName,
+    this.language = 'en',
+    this.onboardingComplete = false,
+    this.joinedAt,
+    this.dailyAyahGoal = 5,
+    this.nightlyReflectionGoal = true,
+    this.deepStudyGoal = false,
+    this.currentStreak = 0,
+    this.longestStreak = 0,
+    this.lastActiveDate,
+    this.faithScore = 0,
+    this.quranEngagement = 0.0,
+    this.heartReflection = 0.0,
+    this.salahAlignment = 0.0,
+    this.actsOfKindness = 0.0,
+    this.offlineMode = false,
+    this.bismillahOption = true,
+    this.guiltFreeReminders = true,
+    this.reciterName = 'Mishary Rashid Alafasy',
+    this.playbackSpeed = 1.0,
+    this.wordByWordEnabled = false,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'lastName': lastName,
+        'language': language,
+        'onboardingComplete': onboardingComplete,
+        'joinedAt': joinedAt?.toIso8601String(),
+        'dailyAyahGoal': dailyAyahGoal,
+        'nightlyReflectionGoal': nightlyReflectionGoal,
+        'deepStudyGoal': deepStudyGoal,
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'lastActiveDate': lastActiveDate?.toIso8601String(),
+        'faithScore': faithScore,
+        'quranEngagement': quranEngagement,
+        'heartReflection': heartReflection,
+        'salahAlignment': salahAlignment,
+        'actsOfKindness': actsOfKindness,
+        'offlineMode': offlineMode,
+        'bismillahOption': bismillahOption,
+        'guiltFreeReminders': guiltFreeReminders,
+        'reciterName': reciterName,
+        'playbackSpeed': playbackSpeed,
+        'wordByWordEnabled': wordByWordEnabled,
+      };
+
+  factory UserProfile.fromMap(Map<dynamic, dynamic> m) => UserProfile(
+        name: (m['name'] as String?) ?? 'Hassan',
+        lastName: m['lastName'] as String?,
+        language: (m['language'] as String?) ?? 'en',
+        onboardingComplete: (m['onboardingComplete'] as bool?) ?? false,
+        joinedAt: m['joinedAt'] != null
+            ? DateTime.tryParse(m['joinedAt'] as String)
+            : null,
+        dailyAyahGoal: (m['dailyAyahGoal'] as int?) ?? 5,
+        nightlyReflectionGoal: (m['nightlyReflectionGoal'] as bool?) ?? true,
+        deepStudyGoal: (m['deepStudyGoal'] as bool?) ?? false,
+        currentStreak: (m['currentStreak'] as int?) ?? 0,
+        longestStreak: (m['longestStreak'] as int?) ?? 0,
+        lastActiveDate: m['lastActiveDate'] != null
+            ? DateTime.tryParse(m['lastActiveDate'] as String)
+            : null,
+        faithScore: (m['faithScore'] as int?) ?? 0,
+        quranEngagement: ((m['quranEngagement'] as num?) ?? 0.0).toDouble(),
+        heartReflection: ((m['heartReflection'] as num?) ?? 0.0).toDouble(),
+        salahAlignment: ((m['salahAlignment'] as num?) ?? 0.0).toDouble(),
+        actsOfKindness: ((m['actsOfKindness'] as num?) ?? 0.0).toDouble(),
+        offlineMode: (m['offlineMode'] as bool?) ?? false,
+        bismillahOption: (m['bismillahOption'] as bool?) ?? true,
+        guiltFreeReminders: (m['guiltFreeReminders'] as bool?) ?? true,
+        reciterName:
+            (m['reciterName'] as String?) ?? 'Mishary Rashid Alafasy',
+        playbackSpeed: ((m['playbackSpeed'] as num?) ?? 1.0).toDouble(),
+        wordByWordEnabled: (m['wordByWordEnabled'] as bool?) ?? false,
+      );
+
+  UserProfile copyWith({
+    String? name,
+    int? faithScore,
+    double? quranEngagement,
+    double? heartReflection,
+    double? salahAlignment,
+    double? actsOfKindness,
+    int? currentStreak,
+    bool? offlineMode,
+    bool? onboardingComplete,
+    int? dailyAyahGoal,
+    String? language,
+  }) =>
+      UserProfile(
+        name: name ?? this.name,
+        lastName: lastName,
+        language: language ?? this.language,
+        onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+        joinedAt: joinedAt,
+        dailyAyahGoal: dailyAyahGoal ?? this.dailyAyahGoal,
+        nightlyReflectionGoal: nightlyReflectionGoal,
+        deepStudyGoal: deepStudyGoal,
+        currentStreak: currentStreak ?? this.currentStreak,
+        longestStreak: longestStreak,
+        faithScore: faithScore ?? this.faithScore,
+        quranEngagement: quranEngagement ?? this.quranEngagement,
+        heartReflection: heartReflection ?? this.heartReflection,
+        salahAlignment: salahAlignment ?? this.salahAlignment,
+        actsOfKindness: actsOfKindness ?? this.actsOfKindness,
+        offlineMode: offlineMode ?? this.offlineMode,
+        bismillahOption: bismillahOption,
+        guiltFreeReminders: guiltFreeReminders,
+        reciterName: reciterName,
+        playbackSpeed: playbackSpeed,
+        wordByWordEnabled: wordByWordEnabled,
+      );
 }
 
-@collection
 class JournalEntry {
-  Id id = Isar.autoIncrement;
+  final String id;
+  final DateTime createdAt;
+  final String prompt;
+  final String content;
+  final String? linkedDeed;
+  final String? surahRef;
+  final String? arabicAyah;
+  final bool isSaved;
+  final List<String> tags;
 
-  @Index()
-  late DateTime createdAt;
+  JournalEntry({
+    String? id,
+    required this.createdAt,
+    required this.prompt,
+    required this.content,
+    this.linkedDeed,
+    this.surahRef,
+    this.arabicAyah,
+    this.isSaved = false,
+    this.tags = const [],
+  }) : id = id ?? '${createdAt.millisecondsSinceEpoch}';
 
-  late String prompt;
-  late String content;
-  String? linkedDeed; // Charity, Prayer, Kindness, etc.
-  String? surahRef; // e.g. "Al-Baqarah 2:152"
-  String? arabicAyah;
-  bool isSaved = false;
-  List<String> tags = [];
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'createdAt': createdAt.toIso8601String(),
+        'prompt': prompt,
+        'content': content,
+        'linkedDeed': linkedDeed,
+        'surahRef': surahRef,
+        'arabicAyah': arabicAyah,
+        'isSaved': isSaved,
+        'tags': tags,
+      };
+
+  factory JournalEntry.fromMap(Map<dynamic, dynamic> m) => JournalEntry(
+        id: m['id'] as String?,
+        createdAt: DateTime.parse(m['createdAt'] as String),
+        prompt: (m['prompt'] as String?) ?? '',
+        content: (m['content'] as String?) ?? '',
+        linkedDeed: m['linkedDeed'] as String?,
+        surahRef: m['surahRef'] as String?,
+        arabicAyah: m['arabicAyah'] as String?,
+        isSaved: (m['isSaved'] as bool?) ?? false,
+        tags: (m['tags'] as List?)?.cast<String>() ?? [],
+      );
 }
 
-@collection
 class SRSCard {
-  Id id = Isar.autoIncrement;
-
-  @Index(composite: [CompositeIndex('ayahNumber')])
-  late int surahNumber;
-  late int ayahNumber;
-
-  late String arabicText;
-  late String translation;
-
-  // SRS fields
-  int repetitions = 0;
-  double easeFactor = 2.5;
-  int interval = 1; // days
+  final String id; // "$surahNumber:$ayahNumber"
+  final int surahNumber;
+  final int ayahNumber;
+  final String arabicText;
+  final String translation;
+  int repetitions;
+  double easeFactor;
+  int interval;
   DateTime? nextReviewDate;
   DateTime? lastReviewDate;
-  bool isMastered = false;
-  double retentionStrength = 0.0;
+  bool isMastered;
+  double retentionStrength;
+
+  SRSCard({
+    required this.surahNumber,
+    required this.ayahNumber,
+    required this.arabicText,
+    required this.translation,
+    this.repetitions = 0,
+    this.easeFactor = 2.5,
+    this.interval = 1,
+    this.nextReviewDate,
+    this.lastReviewDate,
+    this.isMastered = false,
+    this.retentionStrength = 0.0,
+  }) : id = '$surahNumber:$ayahNumber';
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'surahNumber': surahNumber,
+        'ayahNumber': ayahNumber,
+        'arabicText': arabicText,
+        'translation': translation,
+        'repetitions': repetitions,
+        'easeFactor': easeFactor,
+        'interval': interval,
+        'nextReviewDate': nextReviewDate?.toIso8601String(),
+        'lastReviewDate': lastReviewDate?.toIso8601String(),
+        'isMastered': isMastered,
+        'retentionStrength': retentionStrength,
+      };
+
+  factory SRSCard.fromMap(Map<dynamic, dynamic> m) => SRSCard(
+        surahNumber: m['surahNumber'] as int,
+        ayahNumber: m['ayahNumber'] as int,
+        arabicText: (m['arabicText'] as String?) ?? '',
+        translation: (m['translation'] as String?) ?? '',
+        repetitions: (m['repetitions'] as int?) ?? 0,
+        easeFactor: ((m['easeFactor'] as num?) ?? 2.5).toDouble(),
+        interval: (m['interval'] as int?) ?? 1,
+        nextReviewDate: m['nextReviewDate'] != null
+            ? DateTime.tryParse(m['nextReviewDate'] as String)
+            : null,
+        lastReviewDate: m['lastReviewDate'] != null
+            ? DateTime.tryParse(m['lastReviewDate'] as String)
+            : null,
+        isMastered: (m['isMastered'] as bool?) ?? false,
+        retentionStrength:
+            ((m['retentionStrength'] as num?) ?? 0.0).toDouble(),
+      );
 }
 
-@collection
 class ThematicJourney {
-  Id id = Isar.autoIncrement;
-
-  late String title;
-  late String subtitle;
-  late String surahReference;
-  late int totalDays;
-  int completedDays = 0;
-  bool isActive = false;
+  final String id;
+  final String title;
+  final String subtitle;
+  final String surahReference;
+  final int totalDays;
+  int completedDays;
+  bool isActive;
   DateTime? startedAt;
   String? imageAsset;
 
-  double get progress =>
-      totalDays > 0 ? completedDays / totalDays : 0.0;
+  ThematicJourney({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.surahReference,
+    required this.totalDays,
+    this.completedDays = 0,
+    this.isActive = false,
+    this.startedAt,
+    this.imageAsset,
+  });
+
+  double get progress => totalDays > 0 ? completedDays / totalDays : 0.0;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'subtitle': subtitle,
+        'surahReference': surahReference,
+        'totalDays': totalDays,
+        'completedDays': completedDays,
+        'isActive': isActive,
+        'startedAt': startedAt?.toIso8601String(),
+        'imageAsset': imageAsset,
+      };
+
+  factory ThematicJourney.fromMap(Map<dynamic, dynamic> m) => ThematicJourney(
+        id: (m['id'] as String?) ?? '',
+        title: (m['title'] as String?) ?? '',
+        subtitle: (m['subtitle'] as String?) ?? '',
+        surahReference: (m['surahReference'] as String?) ?? '',
+        totalDays: (m['totalDays'] as int?) ?? 0,
+        completedDays: (m['completedDays'] as int?) ?? 0,
+        isActive: (m['isActive'] as bool?) ?? false,
+        startedAt: m['startedAt'] != null
+            ? DateTime.tryParse(m['startedAt'] as String)
+            : null,
+        imageAsset: m['imageAsset'] as String?,
+      );
 }
 
-@collection
 class DailyProgress {
-  Id id = Isar.autoIncrement;
+  final String id; // date string "yyyy-MM-dd"
+  final DateTime date;
+  int ayahsRead;
+  bool reflectionDone;
+  bool salahDone;
+  int deedsCount;
+  int tasbihCount;
+  int faithScore;
 
-  @Index(unique: true)
-  late DateTime date;
+  DailyProgress({
+    required this.date,
+    this.ayahsRead = 0,
+    this.reflectionDone = false,
+    this.salahDone = false,
+    this.deedsCount = 0,
+    this.tasbihCount = 0,
+    this.faithScore = 0,
+  }) : id =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  int ayahsRead = 0;
-  bool reflectionDone = false;
-  bool salahDone = false;
-  int deedsCount = 0;
-  int tasbihCount = 0;
-  int faithScore = 0;
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'date': date.toIso8601String(),
+        'ayahsRead': ayahsRead,
+        'reflectionDone': reflectionDone,
+        'salahDone': salahDone,
+        'deedsCount': deedsCount,
+        'tasbihCount': tasbihCount,
+        'faithScore': faithScore,
+      };
+
+  factory DailyProgress.fromMap(Map<dynamic, dynamic> m) => DailyProgress(
+        date: DateTime.parse(m['date'] as String),
+        ayahsRead: (m['ayahsRead'] as int?) ?? 0,
+        reflectionDone: (m['reflectionDone'] as bool?) ?? false,
+        salahDone: (m['salahDone'] as bool?) ?? false,
+        deedsCount: (m['deedsCount'] as int?) ?? 0,
+        tasbihCount: (m['tasbihCount'] as int?) ?? 0,
+        faithScore: (m['faithScore'] as int?) ?? 0,
+      );
 }

@@ -15,15 +15,14 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.5.1
 
-  # Local Database
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  # Local Storage (web-compatible)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   path_provider: ^2.1.3
+  shared_preferences: ^2.2.3
 
-  # Audio
+  # Audio (just_audio has web support; background service is mobile-only)
   just_audio: ^0.9.40
-  audio_service: ^0.18.15
-  just_audio_background: ^0.0.1-beta.13
 
   # Networking
   dio: ^5.4.3
@@ -36,24 +35,19 @@ dependencies:
   cached_network_image: ^3.3.1
   lottie: ^3.1.2
 
-  # Speech & TTS (speech_to_text excluded — js version conflict with isar 3.x)
-  # Re-add speech_to_text when upgrading to isar 4.x
+  # TTS (has web support)
   flutter_tts: ^4.0.2
 
   # Fonts & Icons
   google_fonts: ^6.2.1
 
-  # Storage
-  shared_preferences: ^2.2.3
+  # Storage extras
   flutter_secure_storage: ^9.2.2
-  hive_flutter: ^1.1.0
-  hive: ^2.2.3
 
   # Utils
   intl: ^0.19.0
   uuid: ^4.4.0
   url_launcher: ^6.2.6
-  package_info_plus: ^8.0.0
 
   # Navigation
   go_router: ^13.2.1
@@ -67,9 +61,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  # isar_generator and riverpod_lint excluded from CI — analyzer version conflict
-  # (isar_generator needs analyzer <6.0.0, riverpod_lint needs ^7.0.0)
-  # Run locally with: dart pub add --dev isar_generator riverpod_lint custom_lint
+  hive_generator: ^2.0.1
   build_runner: ^2.4.9
 
 flutter:

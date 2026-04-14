@@ -84,3 +84,4 @@ coverage/
 
 # Logs
 *.log
+*.g.dart
