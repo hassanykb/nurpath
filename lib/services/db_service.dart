@@ -124,6 +124,27 @@ class DbService {
     await Hive.box(_userBox).put('profile', user.toMap());
   }
 
+  Future<void> addFaithPoints({
+    int score = 0,
+    double quran = 0.0,
+    double heart = 0.0,
+    double salah = 0.0,
+    double kindness = 0.0,
+  }) async {
+    final user = await getUser();
+    if (user != null) {
+      user.faithScore += score;
+      if (user.faithScore > 100) user.faithScore = 100;
+      
+      user.quranEngagement = (user.quranEngagement + quran).clamp(0.0, 1.0);
+      user.heartReflection = (user.heartReflection + heart).clamp(0.0, 1.0);
+      user.salahAlignment = (user.salahAlignment + salah).clamp(0.0, 1.0);
+      user.actsOfKindness = (user.actsOfKindness + kindness).clamp(0.0, 1.0);
+      
+      await saveUser(user);
+    }
+  }
+
   // ── Journal ───────────────────────────────────────────────────────────────
 
   Future<List<JournalEntry>> getJournalEntries({int limit = 20}) async {

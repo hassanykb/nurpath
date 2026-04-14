@@ -47,6 +47,7 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   @override
   Widget build(BuildContext context) {
     final journalAsync = ref.watch(journalEntriesProvider);
+    final dailyAyahAsync = ref.watch(dailyAyahProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -70,32 +71,56 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
                 ),
               ),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // ── Ayah Card ─────────────────────────────
-                      _ReflectAyahCard(
-                        arabic: _sampleAyah.arabic,
-                        translation: _sampleAyah.translation,
-                        surahRef: _sampleAyah.ref,
-                      ),
-                      const SizedBox(height: 20),
+                child: dailyAyahAsync.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.emerald),
+                  ),
+                  error: (e, _) => Center(child: Text('Error: $e')),
+                  data: (ayahData) {
+                    final req = ReflectionRequest(
+                      arabicAyah: ayahData['arabic'] ?? _sampleAyah.arabic,
+                      translation: ayahData['translation'] ?? _sampleAyah.translation,
+                      surahRef: ayahData['surahName'] != null 
+                        ? '${ayahData['surahName']} ${ayahData['surahNumber']}:${ayahData['ayahNumber']}'
+                        : _sampleAyah.ref,
+                    );
+                    
+                    final promptAsync = ref.watch(reflectionPromptProvider(req));
+                    
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // ── Ayah Card ─────────────────────────────
+                          _ReflectAyahCard(
+                            arabic: req.arabicAyah,
+                            translation: req.translation,
+                            surahRef: req.surahRef,
+                          ),
+                          const SizedBox(height: 20),
 
-                      // ── Reflection Prompt ─────────────────────
-                      _ReflectionPromptCard(
-                        prompt:
-                            'How can you apply "remember Me and I will remember you" in your work today? Write your intention.',
-                        tafseeerRef: 'Ibn Kathir on Al-Baqarah 2:152',
-                      ),
-                      const SizedBox(height: 16),
+                          // ── Reflection Prompt ─────────────────────
+                          promptAsync.when(
+                            loading: () => const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(color: AppColors.emerald),
+                              ),
+                            ),
+                            error: (_, __) => const SizedBox.shrink(),
+                            data: (prompt) => _ReflectionPromptCard(
+                              prompt: prompt.question,
+                              tafseeerRef: prompt.tafseeerCitation,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
 
-                      // ── Journal Editor ────────────────────────
-                      _JournalEditor(
-                        controller: _journalController,
-                        onVoiceInput: () => _startVoiceInput(),
-                      ),
+                          // ── Journal Editor ────────────────────────
+                          _JournalEditor(
+                            controller: _journalController,
+                            onVoiceInput: () => _startVoiceInput(),
+                          ),
                       const SizedBox(height: 12),
 
                       // ── Deed Linker ───────────────────────────
@@ -162,8 +187,11 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -172,22 +200,42 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
       ),
     );
   }
-
   Future<void> _saveEntry() async {
     if (_journalController.text.trim().isEmpty) return;
     setState(() => _isSaving = true);
+    
+    // Get current ayah info
+    final ayahDataAsync = ref.read(dailyAyahProvider);
+    final ayahData = ayahDataAsync.valueOrNull;
+    final arabic = ayahData?['arabic'] ?? _sampleAyah.arabic;
+    final translation = ayahData?['translation'] ?? _sampleAyah.translation;
+    final refText = ayahData?['surahName'] != null 
+        ? '${ayahData!['surahName']} ${ayahData['surahNumber']}:${ayahData['ayahNumber']}'
+        : _sampleAyah.ref;
+
+    final req = ReflectionRequest(
+      arabicAyah: arabic,
+      translation: translation,
+      surahRef: refText,
+    );
+    final promptAsync = ref.read(reflectionPromptProvider(req));
+    final prompt = promptAsync.valueOrNull?.question ?? 'Daily Reflection';
+
     await DbService.instance.saveJournalEntry(
       JournalEntry(
         createdAt: DateTime.now(),
-        prompt:
-            'How can you apply "remember Me and I will remember you" in your work today?',
+        prompt: prompt,
         content: _journalController.text.trim(),
         linkedDeed: _selectedDeed,
-        surahRef: _sampleAyah.ref,
-        arabicAyah: _sampleAyah.arabic,
+        surahRef: refText,
+        arabicAyah: arabic,
         isSaved: true,
       ),
     );
+    
+    // Add faith points!
+    await DbService.instance.addFaithPoints(score: 2, heart: 0.1);
+    ref.invalidate(userProfileProvider);
     ref.invalidate(journalEntriesProvider);
     setState(() => _isSaving = false);
     _journalController.clear();

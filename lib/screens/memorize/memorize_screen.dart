@@ -141,6 +141,13 @@ class _MemorizeScreenState extends ConsumerState<MemorizeScreen> {
                                       _revealedCards.add(card.id);
                                     }
                                   });
+                                  
+                                  // Did we just master it? Give points!
+                                  if (!isRevealed) {
+                                    await DbService.instance.addFaithPoints(score: 1, quran: 0.05);
+                                    ref.invalidate(userProfileProvider);
+                                  }
+
                                   card.isMastered = !isRevealed;
                                   await DbService.instance.saveSRSCard(card);
                                   ref.invalidate(srsCardsProvider);

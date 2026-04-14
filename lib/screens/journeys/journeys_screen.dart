@@ -162,6 +162,11 @@ class JourneysScreen extends ConsumerWidget {
     } else {
       if (journey.completedDays < journey.totalDays) {
         journey.completedDays++;
+        
+        // Give faith points for journey progress!
+        await DbService.instance.addFaithPoints(score: 5, quran: 0.1, kindness: 0.05);
+        ref.invalidate(userProfileProvider);
+
         if (journey.completedDays == journey.totalDays) {
           msg = 'Alhamdulillah! You completed: ${journey.title} 🎉';
         } else {
