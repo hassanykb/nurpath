@@ -14,7 +14,6 @@ dependencies:
 
   # State Management
   flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
 
   # Local Database
   isar: ^3.1.0+1
@@ -68,11 +67,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  isar_generator: ^3.1.0+1
-  riverpod_generator: ^2.4.0
+  # isar_generator and riverpod_lint excluded from CI — analyzer version conflict
+  # (isar_generator needs analyzer <6.0.0, riverpod_lint needs ^7.0.0)
+  # Run locally with: dart pub add --dev isar_generator riverpod_lint custom_lint
   build_runner: ^2.4.9
-  custom_lint: ^0.6.4
-  riverpod_lint: ^2.3.10
 
 flutter:
   uses-material-design: true
