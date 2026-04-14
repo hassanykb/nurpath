@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../providers/app_providers.dart';
 import '../../models/user_model.dart';
+import '../../models/ayah_model.dart';
 import '../../services/db_service.dart';
 import '../../widgets/geometric_pattern.dart';
 import '../../widgets/nurpath_card.dart';
@@ -55,7 +56,7 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // ── Header ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: Row(
@@ -65,7 +66,8 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
                     IconButton(
                       icon: const Icon(Icons.history_rounded,
                           color: AppColors.textSecondary),
-                      onPressed: () => _showJournalHistory(context, journalAsync),
+                      onPressed: () =>
+                          _showJournalHistory(context, journalAsync),
                     ),
                   ],
                 ),
@@ -75,123 +77,25 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
                   loading: () => const Center(
                     child: CircularProgressIndicator(color: AppColors.emerald),
                   ),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (ayahData) {
-                    final req = ReflectionRequest(
-                      arabicAyah: ayahData['arabic'] ?? _sampleAyah.arabic,
-                      translation: ayahData['translation'] ?? _sampleAyah.translation,
-                      surahRef: ayahData['surahName'] != null 
-                        ? '${ayahData['surahName']} ${ayahData['surahNumber']}:${ayahData['ayahNumber']}'
-                        : _sampleAyah.ref,
-                    );
-                    
-                    final promptAsync = ref.watch(reflectionPromptProvider(req));
-                    
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // ── Ayah Card ─────────────────────────────
-                          _ReflectAyahCard(
-                            arabic: req.arabicAyah,
-                            translation: req.translation,
-                            surahRef: req.surahRef,
-                          ),
-                          const SizedBox(height: 20),
-
-                          // ── Reflection Prompt ─────────────────────
-                          promptAsync.when(
-                            loading: () => const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: CircularProgressIndicator(color: AppColors.emerald),
-                              ),
-                            ),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (prompt) => _ReflectionPromptCard(
-                              prompt: prompt.question,
-                              tafseeerRef: prompt.tafseeerCitation,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // ── Journal Editor ────────────────────────
-                          _JournalEditor(
-                            controller: _journalController,
-                            onVoiceInput: () => _startVoiceInput(),
-                          ),
-                      const SizedBox(height: 12),
-
-                      // ── Deed Linker ───────────────────────────
-                      _DeedLinker(
-                        selectedDeed: _selectedDeed,
-                        deeds: _deeds,
-                        showDropdown: _showDeedDropdown,
-                        onToggleDropdown: () =>
-                            setState(() => _showDeedDropdown = !_showDeedDropdown),
-                        onSelectDeed: (d) =>
-                            setState(() {
-                              _selectedDeed = d;
-                              _showDeedDropdown = false;
-                            }),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Timeline ──────────────────────────────
-                      _JournalTimeline(journalAsync: journalAsync),
-                      const SizedBox(height: 20),
-
-                      // ── Actions ───────────────────────────────
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              onPressed: _isSaving ? null : _saveEntry,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.emerald,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: _isSaving
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Save & Apply'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _getNextPrompt,
-                              style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                side: const BorderSide(
-                                    color: AppColors.emerald, width: 1),
-                              ),
-                              child: Text(
-                                'Get Next Prompt',
-                                style: AppTypography.labelMedium.copyWith(
-                                  color: AppColors.emerald,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  error: (_, __) => SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildContent(
+                      journalAsync: journalAsync,
+                      arabic: _sampleAyah.arabic,
+                      translation: _sampleAyah.translation,
+                      surahRef: _sampleAyah.ref,
+                    ),
+                  ),
+                  data: (AyahData ayahData) => SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildContent(
+                      journalAsync: journalAsync,
+                      arabic: ayahData.arabicText,
+                      translation: ayahData.translation,
+                      surahRef:
+                          '${ayahData.surahNumber}:${ayahData.ayahNumber}',
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -200,17 +104,129 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
       ),
     );
   }
+
+  Widget _buildContent({
+    required AsyncValue<List<JournalEntry>> journalAsync,
+    required String arabic,
+    required String translation,
+    required String surahRef,
+  }) {
+    final req = ReflectionRequest(
+      arabicAyah: arabic,
+      translation: translation,
+      surahRef: surahRef,
+    );
+    final promptAsync = ref.watch(reflectionPromptProvider(req));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Ayah Card ─────────────────────────────
+        _ReflectAyahCard(
+          arabic: arabic,
+          translation: translation,
+          surahRef: surahRef,
+        ),
+        const SizedBox(height: 20),
+
+        // ── Reflection Prompt ─────────────────────
+        promptAsync.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: CircularProgressIndicator(color: AppColors.emerald),
+            ),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (prompt) => _ReflectionPromptCard(
+            prompt: prompt.question,
+            tafseeerRef: prompt.tafseeerCitation,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Journal Editor ────────────────────────
+        _JournalEditor(
+          controller: _journalController,
+          onVoiceInput: _startVoiceInput,
+        ),
+        const SizedBox(height: 12),
+
+        // ── Deed Linker ───────────────────────────
+        _DeedLinker(
+          selectedDeed: _selectedDeed,
+          deeds: _deeds,
+          showDropdown: _showDeedDropdown,
+          onToggleDropdown: () =>
+              setState(() => _showDeedDropdown = !_showDeedDropdown),
+          onSelectDeed: (d) => setState(() {
+            _selectedDeed = d;
+            _showDeedDropdown = false;
+          }),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Timeline ──────────────────────────────
+        _JournalTimeline(journalAsync: journalAsync),
+        const SizedBox(height: 20),
+
+        // ── Actions ───────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveEntry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.emerald,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Save & Apply'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _getNextPrompt,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.emerald, width: 1),
+                ),
+                child: Text(
+                  'Get Next Prompt',
+                  style: AppTypography.labelMedium.copyWith(
+                    color: AppColors.emerald,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Future<void> _saveEntry() async {
     if (_journalController.text.trim().isEmpty) return;
     setState(() => _isSaving = true);
-    
-    // Get current ayah info
+
+    // Read current ayah info from provider
     final ayahDataAsync = ref.read(dailyAyahProvider);
     final ayahData = ayahDataAsync.valueOrNull;
-    final arabic = ayahData?['arabic'] ?? _sampleAyah.arabic;
-    final translation = ayahData?['translation'] ?? _sampleAyah.translation;
-    final refText = ayahData?['surahName'] != null 
-        ? '${ayahData!['surahName']} ${ayahData['surahNumber']}:${ayahData['ayahNumber']}'
+    final arabic = ayahData?.arabicText ?? _sampleAyah.arabic;
+    final translation = ayahData?.translation ?? _sampleAyah.translation;
+    final refText = ayahData != null
+        ? '${ayahData.surahNumber}:${ayahData.ayahNumber}'
         : _sampleAyah.ref;
 
     final req = ReflectionRequest(
@@ -232,13 +248,15 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
         isSaved: true,
       ),
     );
-    
-    // Add faith points!
+
+    // Award faith points for reflecting!
     await DbService.instance.addFaithPoints(score: 2, heart: 0.1);
     ref.invalidate(userProfileProvider);
     ref.invalidate(journalEntriesProvider);
+
     setState(() => _isSaving = false);
     _journalController.clear();
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -248,28 +266,26 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
           ),
           backgroundColor: AppColors.bgCardElevated,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
   }
 
   void _getNextPrompt() {
-    // In a real app this refreshes the AI prompt
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Loading next reflection prompt…')),
     );
   }
 
   void _startVoiceInput() {
-    // Voice-to-text integration placeholder
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Voice input coming soon…')),
     );
   }
 
-  void _showJournalHistory(BuildContext context, AsyncValue<List<JournalEntry>> entries) {
+  void _showJournalHistory(
+      BuildContext context, AsyncValue<List<JournalEntry>> entries) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -339,8 +355,9 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   }
 
   String _formatDate(DateTime dt) {
-    final months = [
-      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[dt.month - 1]} ${dt.day}';
   }
@@ -374,16 +391,12 @@ class _ReflectAyahCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Surah ref
           Text(
             'Reflect on ${surahRef.split(' ').take(2).join(' ')}',
-            style: AppTypography.goldHeadline.copyWith(
-              fontFamily: 'Amiri',
-            ),
+            style: AppTypography.goldHeadline.copyWith(fontFamily: 'Amiri'),
           ),
           Text(surahRef, style: AppTypography.surahRef),
           const SizedBox(height: 16),
-          // Arabic
           Text(
             arabic,
             style: AppTypography.arabicLarge,
@@ -391,7 +404,6 @@ class _ReflectAyahCard extends StatelessWidget {
             textDirection: TextDirection.rtl,
           ),
           const SizedBox(height: 12),
-          // AI generated indicator
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -428,27 +440,20 @@ class _ReflectionPromptCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.emerald,
-                size: 18,
-              ),
+              const Icon(Icons.check_circle_rounded,
+                  color: AppColors.emerald, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   prompt,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textPrimary),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '— $tafseeerRef',
-            style: AppTypography.surahRef,
-          ),
+          Text('— $tafseeerRef', style: AppTypography.surahRef),
         ],
       ),
     );
@@ -482,9 +487,8 @@ class _JournalEditor extends StatelessWidget {
             style: AppTypography.bodyMedium,
             decoration: InputDecoration(
               hintText: 'Private digital journal entry…',
-              hintStyle: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textDisabled,
-              ),
+              hintStyle:
+                  AppTypography.bodyMedium.copyWith(color: AppColors.textDisabled),
               border: InputBorder.none,
               filled: false,
               contentPadding: EdgeInsets.zero,
@@ -502,17 +506,16 @@ class _JournalEditor extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       'Voice-to-Text',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.textMuted,
-                      ),
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.bgCardElevated,
                   borderRadius: BorderRadius.circular(8),
@@ -524,9 +527,8 @@ class _JournalEditor extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '3 Text',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.emerald,
-                      ),
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.emerald),
                     ),
                     const SizedBox(width: 2),
                     const Icon(Icons.keyboard_arrow_down,
@@ -566,12 +568,11 @@ class _DeedLinker extends StatelessWidget {
           children: [
             Expanded(
               child: NurPathCard(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
-                    Text('Save reflection',
-                        style: AppTypography.labelMedium),
+                    Text('Save reflection', style: AppTypography.labelMedium),
                     const SizedBox(width: 6),
                     const Icon(Icons.diamond_rounded,
                         size: 14, color: AppColors.gold),
@@ -584,11 +585,13 @@ class _DeedLinker extends StatelessWidget {
                         color: AppColors.emerald,
                       ),
                       child: Center(
-                        child: Text('3',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: Colors.white,
-                              fontSize: 10,
-                            )),
+                        child: Text(
+                          '3',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -599,13 +602,13 @@ class _DeedLinker extends StatelessWidget {
             GestureDetector(
               onTap: onToggleDropdown,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.bgCard,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.divider, width: 0.5),
+                  border:
+                      Border.all(color: AppColors.divider, width: 0.5),
                 ),
                 child: Row(
                   children: [
@@ -614,11 +617,8 @@ class _DeedLinker extends StatelessWidget {
                       style: AppTypography.labelMedium,
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: AppColors.textMuted,
-                    ),
+                    const Icon(Icons.keyboard_arrow_down,
+                        size: 16, color: AppColors.textMuted),
                   ],
                 ),
               ),
@@ -642,11 +642,8 @@ class _DeedLinker extends StatelessWidget {
                         Text(deed, style: AppTypography.bodyMedium),
                         const Spacer(),
                         if (isSelected)
-                          const Icon(
-                            Icons.check_rounded,
-                            size: 16,
-                            color: AppColors.emerald,
-                          ),
+                          const Icon(Icons.check_rounded,
+                              size: 16, color: AppColors.emerald),
                       ],
                     ),
                   ),
@@ -692,11 +689,13 @@ class _TimelineEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final months = [
-      'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     final dateStr =
-        '${months[entry.createdAt.month - 1]} ${entry.createdAt.day} ${entry.createdAt.hour}:${entry.createdAt.minute.toString().padLeft(2, '0')}h';
+        '${months[entry.createdAt.month - 1]} ${entry.createdAt.day} '
+        '${entry.createdAt.hour}:${entry.createdAt.minute.toString().padLeft(2, '0')}h';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -707,11 +706,7 @@ class _TimelineEntry extends StatelessWidget {
             children: [
               const Icon(Icons.info_outline_rounded,
                   size: 16, color: AppColors.textMuted),
-              Container(
-                width: 1,
-                height: 32,
-                color: AppColors.divider,
-              ),
+              Container(width: 1, height: 32, color: AppColors.divider),
             ],
           ),
           const SizedBox(width: 10),
@@ -751,8 +746,7 @@ class _DeedChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.gold.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-            color: AppColors.gold.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 0.5),
       ),
       child: Text(
         label,
